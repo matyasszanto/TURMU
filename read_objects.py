@@ -20,3 +20,6 @@ if __name__ == "__main__":
     for item in objects_list:
         item.print()
 
+    current_map = mo.Map(mapped_objects=objects_list)
+
+    pass
