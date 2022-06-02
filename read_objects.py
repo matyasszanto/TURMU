@@ -17,4 +17,6 @@ if __name__ == "__main__":
     else:
         objects_list = mo.generate_default_objects_list()
 
+    for item in objects_list:
+        item.print()
 
