@@ -3,9 +3,26 @@ import numpy as np
 import math
 from scipy.optimize import linear_sum_assignment as magyar
 
+# set up sigma parameters for rbf calculation
+sigmas = [1,    # sigma_lat
+          1,    # sigma_long
+          1,    # sigma_speed
+          1,    # sigma_width
+          1,    # sigma_length
+          ]
+
 
 class Object:
-    def __init__(self, object_id=0, object_type="empty", lat=0, long=0, speed=0.0, width=0.0, length=0.0):
+    def __init__(self,
+                 object_id=0,
+                 object_type="empty",
+                 lat=0,
+                 long=0,
+                 speed=0.0,
+                 width=0.0,
+                 length=0.0,
+                 number_of_observations=1,
+                 ):
 
         # parameters
         self.object_id = object_id
@@ -15,11 +32,12 @@ class Object:
         self.speed = speed
         self.width = width
         self.length = length
-
-        # Check if object is already in map
-        self.new_object = False     # TODO
+        self.number_of_observations = number_of_observations
 
     def print(self):
+        """
+        print parameters of Object instance
+        """
         print(f"Object id:    {self.object_id}")
         print(f"Object type:  {self.object_type}")
         print(f"Lateral:      {self.lat}")
@@ -27,17 +45,22 @@ class Object:
         print(f"Speed:        {self.speed}")
         print(f"Width:        {self.width}")
         print(f"Length:       {self.length}")
+        print(f"Observations: {self.number_of_observations}")
         print()
 
     def strip_params(self):
-        object_without_id = np.array([self.lat,
-                                      self.long,
-                                      self.speed,
-                                      self.width,
-                                      self.length,
-                                      ]
-                                     )
-        return object_without_id
+        """
+        Strips the Object instance from its non-numeric parameters (e.g., its ID and its type)
+        :return: numpy array of lat, long, speed, width, length
+        """
+        object_without_id_and_type = np.array([self.lat,
+                                               self.long,
+                                               self.speed,
+                                               self.width,
+                                               self.length,
+                                               ]
+                                              )
+        return object_without_id_and_type
 
 
 def read_objects_from_input(input_file=""):
@@ -53,14 +76,23 @@ def read_objects_from_input(input_file=""):
                                           # speed=row.TODO,
                                           # width=row.TODO,
                                           # length=row.TODO,
+                                          # number_of_observations=row.TODO,
                                           )
                                    )
         return list_of_objects
 
 
-def generate_default_objects_list(number_of_objects=3):
-    list_of_objects = []
-    object_types = np.array(["vehicle", "pedestrian", "other"])
+def generate_default_objects_list(number_of_objects=3, cars=False):
+    """
+    Generates a list of Object instances of length number_of_objects with random numeric parameters for
+    long and lat, and with fixed values for types
+    :param number_of_objects: number of objects to be generated
+    :param cars: (False) Boolean to select only "other" types of objects or
+                randomly choose from [vehicle, pedestrian, other]
+    :return: list of Object instances
+    """
+    list_of_objects = np.empty(number_of_objects, dtype=Object)
+    object_types = (np.array(["vehicle", "pedestrian", "other"]) if not cars else np.array(["vehicle"]))
     for i in range(number_of_objects):
         current_type = np.random.choice(object_types)
         if current_type == "vehicle":
@@ -72,34 +104,28 @@ def generate_default_objects_list(number_of_objects=3):
         else:
             current_width = 1
             current_length = 1
-        list_of_objects.append(Object(object_id=i,
-                                      object_type=current_type,
-                                      lat=10+np.random.uniform(-5, 5),
-                                      long=np.random.uniform(-1, 1),
-                                      speed=0,
-                                      width=current_width,
-                                      length=current_length,
-                                      )
-                               )
+        list_of_objects[i] = Object(object_id=i,
+                                    object_type=current_type,
+                                    lat=10+np.random.uniform(-5, 5),
+                                    long=np.random.uniform(-1, 1),
+                                    speed=0,
+                                    width=current_width,
+                                    length=current_length,
+                                    )
     return list_of_objects
 
 
 class Map:
-    def __init__(self, mapped_objects, mapped_objects_means=np.array([]), number_of_observations=1):
+    def __init__(self, mapped_objects, obs_threshold_for_new_object_addition=0):
         """
-        Map Class
-        :param mapped_objects: List of mapped objects
-        :param mapped_objects_means: means of parameters of mapped objects
-        :param number_of_observations: number of observations already added for the objects
-        TODO change number_of_observations to be an array for separate objects
+        Class for mapped objects
+        :param mapped_objects: List of Object instances
+        :param obs_threshold_for_new_object_addition: threshold value, denoting
+                                                 how many observations shall a new value be added
         """
         self.mapped_objects = mapped_objects
-        self.mapped_objects_means = mapped_objects_means
-        self.number_of_observations = number_of_observations
-
-        for i, mapped_object in enumerate(mapped_objects):
-            # TODO write mapped_object_mean calculator
-            pass
+        self.number_of_mapped_objects = len(mapped_objects)
+        self.obs_threshold_for_new_object_addition = obs_threshold_for_new_object_addition
 
     def update_map(self, paired_mapped_object_indices, paired_newly_observed_object_indices, newly_observed_objects):
         """
@@ -108,24 +134,51 @@ class Map:
         paired_newly_observed_object_indices: output of find_new_objects function
         newly_observed_objects: array of instances of map_object.Object class
         """
+        for i, mapped_object_mean in enumerate(self.mapped_objects):
 
-        for index_to_update_mapped, index_to_update_new in zip(paired_mapped_object_indices,
-                                                               paired_newly_observed_object_indices
-                                                               ):
-            for i, map_mean in enumerate(self.mapped_objects_means[index_to_update_mapped]):
-                self.mapped_objects_means[index_to_update_mapped][i] =\
-                    (self.number_of_observations * map_mean + newly_observed_objects[index_to_update_new][i]) / \
-                    (self.number_of_observations + 1)
+            # check if position update is necessary
+            if i in paired_mapped_object_indices:
 
-        # TODO add number of observations for each object separately
+                # get means and no_observations from paired mapped object
+                mapped_means = self.mapped_objects[i].strip_params()
+                n = self.mapped_objects[i].number_of_observations
 
-        self.number_of_observations += 1
+                # get values from newly observed paired object
+                paired_newly_observed_object_index = paired_newly_observed_object_indices[i]
+                new_vals = newly_observed_objects[paired_newly_observed_object_index].strip_params()
+
+                # calculate new means
+                updated_means = np.empty_like(mapped_means)
+                for j, (old_val, new_val) in enumerate(zip(mapped_means, new_vals)):
+                    weighted_mean = old_val * n
+                    updated_means[j] = (weighted_mean + new_val) / (n+1)
+
+                # update mapped object means in map class
+                self.mapped_objects[i].lat = updated_means[0]
+                self.mapped_objects[i].long = updated_means[1]
+                self.mapped_objects[i].speed = updated_means[2]
+                self.mapped_objects[i].width = updated_means[3]
+                self.mapped_objects[i].length = updated_means[4]
+
+                # increase number of observations for object
+                self.mapped_objects[i].number_of_observations += 1
+
+    def add_new_object(self, new_object_indices, newly_observed_objects):
+        """
+        Method to include found new objects into map
+        :param new_object_indices: indices of new objects in newly_observed_objects
+        :param newly_observed_objects: array of instances of map_object.Object class
+        """
+
+        # TODO candidate map logic
+        for i in new_object_indices:
+            self.mapped_objects.append(newly_observed_objects[i])
 
 
-def find_new_objects(currently_mapped_objects_means, newly_observed_objects):
+def find_new_objects(currently_mapped_objects, newly_observed_objects):
     """
     Finds the best pairings and returns indices of newly found objects
-    currently_mapped_objects_means: instance of map_object.Map.means array
+    currently_mapped_objects: instance of map_object.Map class
     newly_observed_objects: array of instances of map_object.Object class
     :return: four values:
                 - found_new_object (Boolean): True, if the number of observed objects is greater
@@ -137,8 +190,13 @@ def find_new_objects(currently_mapped_objects_means, newly_observed_objects):
 
                 - paired_new_object_indices (Ndarray): indices of paired object in newly_observed_objects
     """
+    # calculate cost matrix between the newly observed and the mapped objects
+    costs = calculate_cost_of_observation(current_map=currently_mapped_objects,
+                                          candidates=newly_observed_objects
+                                          )
 
-    costs = calculate_cost_of_observation(currently_mapped_objects_means, newly_observed_objects)
+    # find pairings
+    # TODO set up threshold value for pairings
     paired_mapped_object_indices, paired_newly_observed_object_indices = magyar(costs)
 
     # TODO logic for found_new_object
@@ -150,35 +208,44 @@ def find_new_objects(currently_mapped_objects_means, newly_observed_objects):
     return found_new_object, new_object_indices, paired_mapped_object_indices, paired_newly_observed_object_indices
 
 
-def calculate_rbf(point_1, point_2, sigma=1):
+def calculate_rbf(point_1, point_2):
     """
     Calculates the radial basis function between two data points.
-    point_1: Data point 1 - N dimensional array
-    point_2: Data point 2 - N dimensional array
-    sigma: (Optional) sigma parameter of the Gaussian
+    point_1: Data point 1 - Object instance
+    point_2: Data point 2 - Object instance
     :return: rbf between point_1 and point_2
     """
-
     result = 0
-    for i_rbf in range(point_1.shape[0]):
-        result += math.exp(-((point_1[i_rbf] - point_2[i_rbf])**2)/(2*sigma**2))
+
+    # check if objects are the same type
+    if point_1.object_type == point_2.object_type:
+        # get numeric parameters into an array
+        point_1_params = point_1.strip_params()
+        point_2_params = point_2.strip_params()
+
+        # calculate rbf for every numeric parameter
+        for i_rbf, sigma in enumerate(sigmas):
+            result += math.exp(-((point_1_params[i_rbf] - point_2_params[i_rbf])**2)/(2*sigma**2))
+
     return result
 
 
-def calculate_cost_of_observation(mapped_object_means, candidates, sigma=1):
+def calculate_cost_of_observation(current_map, candidates):
     """
-    Calculate cost of an observation
-    TODO finish this help
-    :param mapped_object_means:
-    :param candidates:
-    :param sigma:
-    :return:
+    Calculate cost matrix of an observation
+    :param current_map: instance of map_object.Map
+    :param candidates: array of instances of map_object.Object class
+    :return: cost matrix used for the magyar algorithm
     """
-    cost = np.empty((mapped_object_means.shape[0], candidates.shape[0]))  # mapped objs(rows) x candidate objs(columns)
-    for i, map_point in enumerate(mapped_object_means):
+    # shape of cost matrix: mapped objs(rows) x candidate objs(columns)
+    cost = np.empty((current_map.mapped_objects.shape[0], candidates.shape[0]))
+
+    for i, map_point in enumerate(current_map.mapped_objects):
         for j, candidate_point in enumerate(candidates):
+
             # negative sign used because of cost minimization in magyar algorithm
-            # while rbf maximizes at perfect matches
-            cost[i][j] = -calculate_rbf(candidate_point, map_point, sigma)
+            # while regular Gaussian rbf maximizes at perfect matches
+            cost[i][j] = -calculate_rbf(candidate_point, map_point)
+
     print(cost)
     return cost
