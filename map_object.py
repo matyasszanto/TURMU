@@ -23,6 +23,18 @@ class Object:
                  length=0.0,
                  number_of_observations=1,
                  ):
+        """
+        Object class
+
+        :param object_id: ID number of object
+        :param object_type: type of object: vehicle, pedestrian, not_specified
+        :param lat: lateral coordinates of object
+        :param long: longitudinal coordinates of object
+        :param speed: speed of object
+        :param width: width of object
+        :param length: length of object
+        :param number_of_observations: number of times object has already been observed
+        """
 
         # parameters
         self.object_id = object_id
@@ -51,6 +63,7 @@ class Object:
     def strip_params(self):
         """
         Strips the Object instance from its non-numeric parameters (e.g., its ID and its type)
+
         :return: numpy array of lat, long, speed, width, length
         """
         object_without_id_and_type = np.array([self.lat,
@@ -64,6 +77,13 @@ class Object:
 
 
 def read_objects_from_input(input_file=""):
+    """
+    Read object parameters from input csv file
+    TODO changes for actual use-case
+
+    :param input_file: CSV file containing object parameters
+    :return: list of objects
+    """
     list_of_objects = []
     with open(input_file, "r") as file:
         datareader = csv.reader(file)
@@ -82,14 +102,25 @@ def read_objects_from_input(input_file=""):
         return list_of_objects
 
 
+def write_object_to_output(object_full):
+    """
+    method to write new objects to MQTT or output
+    :param object_full: Object instance to write
+    """
+    # TODO write_object_to_output method
+
+    pass
+
+
 def generate_default_objects_list(number_of_objects=3, cars=False):
     """
     Generates a list of Object instances of length number_of_objects with random numeric parameters for
     long and lat, and with fixed values for types
+
     :param number_of_objects: number of objects to be generated
     :param cars: (False) Boolean to select only "other" types of objects or
                 randomly choose from [vehicle, pedestrian, other]
-    :return: list of Object instances
+    :return: list of Object instances with number of observations set to 5 to show them on the map
     """
     list_of_objects = np.empty(number_of_objects, dtype=Object)
     object_types = (np.array(["vehicle", "pedestrian", "other"]) if not cars else np.array(["vehicle"]))
@@ -111,6 +142,7 @@ def generate_default_objects_list(number_of_objects=3, cars=False):
                                     speed=0,
                                     width=current_width,
                                     length=current_length,
+                                    number_of_observations=5,
                                     )
     return list_of_objects
 
@@ -119,6 +151,7 @@ class Map:
     def __init__(self, mapped_objects, obs_threshold_for_new_object_addition=0):
         """
         Class for mapped objects
+
         :param mapped_objects: List of Object instances
         :param obs_threshold_for_new_object_addition: threshold value, denoting
                                                  how many observations shall a new value be added
@@ -130,9 +163,10 @@ class Map:
     def update_map(self, paired_mapped_object_indices, paired_newly_observed_object_indices, newly_observed_objects):
         """
         Method for updating means of mapped objects with new observation
-        paired_mapped_object_indices: output of find_new_objects function
-        paired_newly_observed_object_indices: output of find_new_objects function
-        newly_observed_objects: array of instances of map_object.Object class
+
+        :param paired_mapped_object_indices: output of find_new_objects function
+        :param paired_newly_observed_object_indices: output of find_new_objects function
+        :param newly_observed_objects: array of instances of map_object.Object class
         """
         for i, mapped_object_mean in enumerate(self.mapped_objects):
 
@@ -166,6 +200,7 @@ class Map:
     def add_new_object(self, new_object_indices, newly_observed_objects):
         """
         Method to include found new objects into map
+
         :param new_object_indices: indices of new objects in newly_observed_objects
         :param newly_observed_objects: array of instances of map_object.Object class
         """
@@ -178,8 +213,9 @@ class Map:
 def find_new_objects(currently_mapped_objects, newly_observed_objects):
     """
     Finds the best pairings and returns indices of newly found objects
-    currently_mapped_objects: instance of map_object.Map class
-    newly_observed_objects: array of instances of map_object.Object class
+
+    :param currently_mapped_objects: instance of map_object.Map class
+    :param newly_observed_objects: array of instances of map_object.Object class
     :return: four values:
                 - found_new_object (Boolean): True, if the number of observed objects is greater
                                               than the number of  mapped objects
@@ -190,9 +226,11 @@ def find_new_objects(currently_mapped_objects, newly_observed_objects):
 
                 - paired_new_object_indices (Ndarray): indices of paired object in newly_observed_objects
     """
+
     # calculate cost matrix between the newly observed and the mapped objects
     costs = calculate_cost_of_observation(current_map=currently_mapped_objects,
-                                          candidates=newly_observed_objects
+                                          candidates=newly_observed_objects,
+                                          threshold=0.8,    # TODO optimize threshold value
                                           )
 
     # find pairings
@@ -211,10 +249,12 @@ def find_new_objects(currently_mapped_objects, newly_observed_objects):
 def calculate_rbf(point_1, point_2):
     """
     Calculates the radial basis function between two data points.
-    point_1: Data point 1 - Object instance
-    point_2: Data point 2 - Object instance
+
+    :param point_1: Data point 1 - Object instance
+    :param point_2: Data point 2 - Object instance
     :return: rbf between point_1 and point_2
     """
+
     result = 0
 
     # check if objects are the same type
@@ -230,13 +270,18 @@ def calculate_rbf(point_1, point_2):
     return result
 
 
-def calculate_cost_of_observation(current_map, candidates):
+def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     """
     Calculate cost matrix of an observation
+
+    :param threshold: threshold value to avoid false pairings
     :param current_map: instance of map_object.Map
     :param candidates: array of instances of map_object.Object class
     :return: cost matrix used for the magyar algorithm
     """
+    # multiply object threshold to
+    cost_threshold = threshold * 5
+
     # shape of cost matrix: mapped objs(rows) x candidate objs(columns)
     cost = np.empty((current_map.mapped_objects.shape[0], candidates.shape[0]))
 
@@ -247,5 +292,7 @@ def calculate_cost_of_observation(current_map, candidates):
             # while regular Gaussian rbf maximizes at perfect matches
             cost[i][j] = -calculate_rbf(candidate_point, map_point)
 
-    print(cost)
+    # check if
+    cost[cost > cost_threshold] = 0
+
     return cost
