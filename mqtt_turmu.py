@@ -5,6 +5,7 @@ import ssl
 # import for functionality
 import random
 import time
+import json
 
 
 def load_default_params():
@@ -13,9 +14,9 @@ def load_default_params():
     client_id = f'maty_python-{random.randint(0, 1000)}'
     username = 'tecnalia'
     password = 't3cn4l1420A'
-    ca_certs_path = "./tecnalia_certs/tecnalia_local_ca.crt"
-    certfile_path = "./tecnalia_certs/tecnalia_local_client.crt"
-    keyfile_path = "./tecnalia_certs/tecnalia_local_client.key"
+    ca_certs_path = "./tecnalia_certs/ca.crt"
+    certfile_path = "./tecnalia_certs/client.crt"
+    keyfile_path = "./tecnalia_certs/client.key"
     return broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path
 
 
@@ -27,7 +28,6 @@ def connect_mqtt(broker, port, client_id, username, password, ca_certs_path, cer
             print("Failed to connect, return code %d\n", rc)
 
     client = mqtt_client.Client(client_id)
-    mqtt_client.Client()
     client.username_pw_set(username, password)
     client.on_connect = on_connect
     client.tls_set(ca_certs=ca_certs_path,
@@ -56,9 +56,17 @@ def publish(client, topic):
         msg_count += 1
 
 
+def parse_message(message):
+    msg_raw = message.payload.decode()
+    msg_clean = msg_raw.replace("\n  ", "").replace("\n", "").replace('""', '", "')
+
+    msg_dict = json.loads(msg_clean)
+    # TODO introduce new loop here
+
+
 def subscribe(client: mqtt_client, topic):
     def on_message(client, userdata, msg):
-        print(f"Received \n{msg.payload.decode()}\nfrom `{msg.topic}` topic")
+        parse_message(message=msg)
 
     client.subscribe(topic)
     client.on_message = on_message
