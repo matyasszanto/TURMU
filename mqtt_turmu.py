@@ -5,7 +5,9 @@ import ssl
 # import for functionality
 import random
 import time
+from datetime import datetime
 import json
+import map_object as mo
 
 
 def load_default_params():
@@ -56,17 +58,42 @@ def publish(client, topic):
         msg_count += 1
 
 
-def parse_message(message):
-    msg_raw = message.payload.decode()
-    msg_clean = msg_raw.replace("\n  ", "").replace("\n", "").replace('""', '", "')
+def publish_object(client, topic, object_as_json_string):
+    msg = object_as_json_string
+    result = client.publish(topic, msg)
+    # result: [0, 1]
+    status = result[0]
+    if status == 1:
+        print("Error. Couldn't publish message")
 
-    msg_dict = json.loads(msg_clean)
-    # TODO introduce new loop here
 
+def subscribe(client: mqtt_client, topic, current_full_map, candidate_map):
+    i = 0
+    def on_message(client, userdata, msg, i):
+        i += 1
+        message_dict = parse_message(message=msg)
 
-def subscribe(client: mqtt_client, topic):
-    def on_message(client, userdata, msg):
-        parse_message(message=msg)
+        try:
+            # get timestamp
+            # timestamp = datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
+
+            # create object from read data
+            mo.Object
+
+        except Exception as e:
+            print(e)
+            print("The message was:")
+            print(msg)
+            pass
 
     client.subscribe(topic)
     client.on_message = on_message
+
+    # TODO introduce new loop here
+
+
+def parse_message(message):
+    msg_raw = message.payload.decode()
+    msg_clean = msg_raw.replace("\n  ", "").replace("\n", "").replace('""', '", "')
+    msg_dict = json.loads(msg_clean)
+    return msg_dict
