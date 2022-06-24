@@ -24,7 +24,7 @@ client = mqtt_turmu.connect_mqtt(broker,
 
 client.loop_start()
 time.sleep(1)
-mo.turmu_offline_mode_publish(3, client)
+mo.turmu_offline_mode_publish(client=client, number_of_objects=3, topic=topic)
 client.disconnect()
 
 
