@@ -82,14 +82,14 @@ class Object:
         """
         creates a dictionary from the class parameters
 
-        :return: {"object_id": object_id, "object_type": object_type, "lateral": lat, "longitudinal": long,
+        :return: {"obstacleId": object_id,"type": object_type, "latitude": lat, "longitude": long,
                   "speed": speed, "width": width, "length": length, "observations": no. of observations}
         """
 
-        return {"object_id": self.object_id,
-                "object_type": self.object_type,
-                "lateral": self.lat,
-                "longitudinal": self.long,
+        return {"obstacleId": self.object_id,
+                "type": self.object_type,
+                "latitude": self.lat,
+                "longitude": self.long,
                 "speed": self.speed,
                 "width": self.width,
                 "length": self.length,
@@ -97,7 +97,7 @@ class Object:
                 }
 
     def as_json(self):
-        object_json = json.dumps(self.as_dict(), 2)
+        object_json = json.dumps(self.as_dict())
         return object_json
 
 
@@ -324,7 +324,6 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
 
 
 def turmu_offline_mode_publish(client, topic, number_of_objects=3, cars=True):
-
     new_observation = generate_default_objects_list(number_of_objects=number_of_objects, cars=True)
     for object in new_observation:
         mqtt_turmu.publish_object(client,
