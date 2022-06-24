@@ -1,5 +1,4 @@
 import map_object as mo
-import mqtt_turmu
 
 if __name__ == "__main__":
 
@@ -9,28 +8,6 @@ if __name__ == "__main__":
     input_dir = None  # currently takes csv with lines as objects
 
     # Setup variables
-    # parameters for Tecnalia MQTT broker
-    broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path = \
-        mqtt_turmu.load_default_params()
-
-    # set up topic name here
-    # for testing use "testtopic/matyas"
-    topic = "testtopic/matyas"
-
-    # TODO logic for MQTT live update
-    client = mqtt_turmu.connect_mqtt(broker,
-                                     port,
-                                     client_id,
-                                     username,
-                                     password,
-                                     ca_certs_path,
-                                     certfile_path,
-                                     keyfile_path,
-                                     )
-
-    client.loop_start()
-
-    mqtt_turmu.subscribe(client, topic)
 
     # Load map objects
     if input_available:
