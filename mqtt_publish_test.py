@@ -1,6 +1,10 @@
+import datetime
+import json
 import random
+import time
 
 import mqtt_turmu
+import map_object as mo
 
 # parameters for Tecnalia MQTT broker
 broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path = \
@@ -19,5 +23,8 @@ client = mqtt_turmu.connect_mqtt(broker,
                                  )
 
 client.loop_start()
+time.sleep(1)
+mo.turmu_offline_mode_publish(3, client)
+client.disconnect()
 
-mqtt_turmu.subscribe(client, topic, current_full_map=None, candidate_map=None)
+
