@@ -68,17 +68,30 @@ def publish_object(client, topic, object_as_json_string):
 
 
 def subscribe(client: mqtt_client, topic, current_full_map, candidate_map):
-    i = 0
-    def on_message(client, userdata, msg, i):
-        i += 1
+    objects = []
+    def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
-
         try:
             # get timestamp
             # timestamp = datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
 
             # create object from read data
-            mo.Object
+            """
+            {"obstacleId": object_id,"type": object_type, "latitude": lat, "longitude": long,
+             "speed": speed, "width": width, "length": length, "observations": no. of observations}
+            """
+            obj = mo.Object(
+                object_id=message_dict["obstacleId"],
+                object_type=message_dict["type"],
+                lat=message_dict["latitude"],
+                long=message_dict["longitude"],
+                speed=message_dict["speed"],
+                width=message_dict["width"],
+                length=message_dict["length"],
+                number_of_observations=message_dict["observations"],
+            )
+            obj.print()
+            objects.append(obj)
 
         except Exception as e:
             print(e)
