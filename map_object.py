@@ -2,6 +2,9 @@ import csv
 import numpy as np
 import math
 from scipy.optimize import linear_sum_assignment as magyar
+import json
+
+import mqtt_turmu
 
 # set up sigma parameters for rbf calculation
 sigmas = [1,    # sigma_lat
@@ -74,6 +77,28 @@ class Object:
                                                ]
                                               )
         return object_without_id_and_type
+
+    def as_dict(self):
+        """
+        creates a dictionary from the class parameters
+
+        :return: {"object_id": object_id, "object_type": object_type, "lateral": lat, "longitudinal": long,
+                  "speed": speed, "width": width, "length": length, "observations": no. of observations}
+        """
+
+        return {"object_id": self.object_id,
+                "object_type": self.object_type,
+                "lateral": self.lat,
+                "longitudinal": self.long,
+                "speed": self.speed,
+                "width": self.width,
+                "length": self.length,
+                "observations": self.number_of_observations
+                }
+
+    def as_json(self):
+        object_json = json.dumps(self.as_dict(), 2)
+        return object_json
 
 
 def read_objects_from_input(input_file=""):
@@ -296,3 +321,14 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     cost[cost > cost_threshold] = 0
 
     return cost
+
+
+def turmu_offline_mode_publish(client, topic, number_of_objects=3, cars=True):
+
+    new_observation = generate_default_objects_list(number_of_objects=number_of_objects, cars=True)
+    for object in new_observation:
+        mqtt_turmu.publish_object(client,
+                                  topic,
+                                  object.as_json(),
+                                  )
+        print(f"object {object} published")
