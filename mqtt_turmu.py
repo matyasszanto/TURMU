@@ -7,7 +7,7 @@ import random
 import time
 from datetime import datetime
 import json
-import map_object as mo
+import map_obstacle as mo
 
 
 def load_default_params():
@@ -52,8 +52,9 @@ def publish_object(client, topic, object_as_json_string):
         print("Error. Couldn't publish message")
 
 
-def subscribe(client: mqtt_client, topic, current_full_map, candidate_map):
-    objects = []
+def subscribe(client: mqtt_client, topic):
+    obstacles = []
+
     def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
         try:
@@ -62,10 +63,10 @@ def subscribe(client: mqtt_client, topic, current_full_map, candidate_map):
 
             # create object from read data
             """
-            {"obstacleId": object_id,"type": object_type, "latitude": lat, "longitude": long,
+            {"obstacleId": obstacle_id,"type": object_type, "latitude": lat, "longitude": long,
              "speed": speed, "width": width, "length": length, "observations": no. of observations}
             """
-            obj = mo.Object(
+            obstacle = mo.Obstacle(
                 object_id=message_dict["obstacleId"],
                 object_type=message_dict["type"],
                 lat=message_dict["latitude"],
@@ -75,8 +76,8 @@ def subscribe(client: mqtt_client, topic, current_full_map, candidate_map):
                 length=message_dict["length"],
                 number_of_observations=message_dict["observations"],
             )
-            obj.print()
-            objects.append(obj)
+            obstacle.print()
+            obstacles.append(obstacle)
 
         except Exception as e:
             print(e)
