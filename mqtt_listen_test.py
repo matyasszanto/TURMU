@@ -19,10 +19,18 @@ client = mqtt_turmu.connect_mqtt(broker,
                                  keyfile_path
                                  )
 
+obstacles = []
+timestamps = []
+
 for i in range(10):
     client.loop(1)
-    obstacles = mqtt_turmu.subscribe(client, topic)
+    mqtt_turmu.subscribe(client=client,
+                         topic=topic,
+                         obstacles=obstacles,
+                         timestamps=timestamps,
+                         )
     for obstacle in obstacles:
         obstacle.print()
-    print(f"loop{i} done")
+    print(f"number of received obstacles: {len(obstacles)}")
+    print(f"loop{i} done\n")
     time.sleep(1)
