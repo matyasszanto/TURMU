@@ -21,6 +21,8 @@ client = mqtt_turmu.connect_mqtt(broker,
 
 for i in range(10):
     client.loop(1)
-    mqtt_turmu.subscribe(client, topic, current_full_map=None, candidate_map=None)
+    obstacles = mqtt_turmu.subscribe(client, topic)
+    for obstacle in obstacles:
+        obstacle.print()
     print(f"loop{i} done")
     time.sleep(1)
