@@ -43,7 +43,7 @@ def connect_mqtt(broker, port, client_id, username, password, ca_certs_path, cer
     return client
 
 
-def publish_object(client, topic, object_as_json_string):
+def publish_obstacle(client, topic, object_as_json_string):
     msg = object_as_json_string
     result = client.publish(topic, msg)
     # result: [0, 1]
@@ -52,15 +52,11 @@ def publish_object(client, topic, object_as_json_string):
         print("Error. Couldn't publish message")
 
 
-def subscribe(client: mqtt_client, topic):
-    obstacles = []
+def subscribe(client: mqtt_client, topic, obstacles, timestamps):
 
     def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
         try:
-            # get timestamp
-            # timestamp = datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
-
             # create object from read data
             """
             {"obstacleId": obstacle_id,"type": object_type, "latitude": lat, "longitude": long,
@@ -76,9 +72,8 @@ def subscribe(client: mqtt_client, topic):
                 length=message_dict["length"],
                 number_of_observations=message_dict["observations"],
             )
-            obstacle.print()
             obstacles.append(obstacle)
-
+            timestamps.append(datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"))
         except Exception as e:
             print(e)
             print("The message was:")
