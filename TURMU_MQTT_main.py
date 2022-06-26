@@ -1,4 +1,4 @@
-import map_object as mo
+import map_obstacle as mo
 import mqtt_turmu
 
 if __name__ == "__main__":
@@ -35,11 +35,11 @@ if __name__ == "__main__":
 
     client.loop_start()
 
-    mqtt_turmu.subscribe(client, topic, current_full_map=None, candidate_map=None)
+    obstacles = []
+    timestamps = []
+    mqtt_turmu.subscribe(client, topic, obstacles=obstacles, timestamps=timestamps)
 
-    current_map = mo.Map(mapped_objects=objects_list,
-                         obs_threshold_for_new_object_addition=1,
-                         )
+    current_map = mo.Map(mapped_obstacles=obstacles, obs_threshold_for_new_obstacle_addition=1)
     # TODO candidates_map = mo.Map(mapped_objects=None)
 
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         mo.find_new_objects(current_map, new_observation)
 
     if new_object_found:
-        current_map.add_new_object(new_object_idx, new_observation)
+        current_map.add_new_obstacle(new_object_idx, new_observation)
 
         # TODO
         """
@@ -64,7 +64,4 @@ if __name__ == "__main__":
         """
         pass
     else:
-        current_map.update_map(paired_mapped_object_idx,
-                               paired_new_object_idx,
-                               new_observation,
-                               )
+        current_map.update_map(paired_mapped_object_idx, paired_new_object_idx, new_observation)
