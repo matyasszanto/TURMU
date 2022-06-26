@@ -4,7 +4,7 @@ import random
 import time
 
 import mqtt_turmu
-import map_object as mo
+import map_obstacle as mo
 
 # parameters for Tecnalia MQTT broker
 broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path = \
@@ -22,7 +22,7 @@ client = mqtt_turmu.connect_mqtt(broker,
                                  keyfile_path
                                  )
 
-mo.turmu_offline_mode_publish(client=client, number_of_objects=3, topic=topic)
+mo.turmu_offline_mode_publish(client=client, topic=topic, number_of_obstacles=3)
 client.disconnect()
 
 
