@@ -214,17 +214,17 @@ class Map:
                     weighted_mean = old_val * n
                     updated_means[j] = (weighted_mean + new_val) / (n+1)
 
-                # update mapped object means in map class
+                # update mapped obstacle means in map class
                 self.mapped_obstacles[i].lat = updated_means[0]
                 self.mapped_obstacles[i].long = updated_means[1]
                 self.mapped_obstacles[i].speed = updated_means[2]
                 self.mapped_obstacles[i].width = updated_means[3]
                 self.mapped_obstacles[i].length = updated_means[4]
 
-                # increase number of observations for object
+                # increase number of observations for obstacle
                 self.mapped_obstacles[i].number_of_observations += 1
 
-    def add_new_object(self, new_obstacle_indices, newly_observed_obstacles):
+    def add_new_obstacle(self, new_obstacle_indices, newly_observed_obstacles):
         """
         Method to include found new objects into map
 
@@ -332,6 +332,6 @@ def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, cars=True):
         # add a timestamp
         obstacle_as_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         obstacle_as_json = json.dumps(obstacle_as_dict)
-        mqtt_turmu.publish_object(client, topic, obstacle_as_json)
+        mqtt_turmu.publish_obstacle(client, topic, obstacle_as_json)
         print(f"obstacle {obstacle} published")
 
