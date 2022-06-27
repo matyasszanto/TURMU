@@ -33,14 +33,14 @@
     {
     	"vehicleId" : "<vehicle-id>",
     	"timestamp" : "2021-11-07T13:50:11.326860Z",
-		"latitude" : "59.408259",
-		"longitude" : "17.95298",
-		"speed" : "3", // In m/s
-		"acceleration" : "1.5", // In m/s2
-		"yaw" : "0.0", // In degrees
-		"yawRate" : "0.0", //In degrees/s2
-		"length": "3", //In meters
-		"width": "1.8" //In meters
+    	"latitude" : "59.408259",
+    	"longitude" : "17.95298",
+        "speed" : "3", // In m/s
+        "acceleration" : "1.5", // In m/s2
+        "yaw" : "0.0", // In degrees
+        "yawRate" : "0.0", //In degrees/s2
+        "length": "3", //In meters
+        "width": "1.8" //In meters
     }
 ```
 
@@ -51,14 +51,14 @@
 
 ```
     {
-    	"obstacleId" : "<obstacle-id>",
-		"timestamp" : "2021-11-07T13:50:11.326860Z",
-    	"type" : "3",
-		"latitude" : "59.408259",
-		"longitude" : "17.95298",
-		"speed" : "3", // In m/s
-		"length": "3", //In meters
-		"width": "1.8" //In meters
+        "obstacleId" : "<obstacle-id>",
+        "timestamp" : "2021-11-07T13:50:11.326860Z",
+        "type" : "3",
+        "latitude" : "59.408259",
+        "longitude" : "17.95298",
+        "speed" : "3", // In m/s
+        "length": "3", //In meters
+        "width": "1.8" //In meters
     }
 ```
 
@@ -70,14 +70,14 @@
 ```
     {
     	"id" : "<id>", @Carlos??
-		"timestamp" : "2021-11-07T13:50:11.326860Z",
+        "timestamp" : "2021-11-07T13:50:11.326860Z",
     	"referenceSpeed" : "2.5", //in m/s
-		"referenceACC" : "2.5", //in m/s
-		"joinRequest" : "True",
-		"joinResponse" : "False" ,
-		"platoonId" : "15",
-		"leaveRequest" : "False",
-		"platoonPosition" : "2" 
+        "referenceACC" : "2.5", //in m/s
+        "joinRequest" : "True",
+        "joinResponse" : "False" ,
+        "platoonId" : "15",
+        "leaveRequest" : "False",
+        "platoonPosition" : "2" 
     }
 ```
 
@@ -88,11 +88,11 @@
 
 ```
     {   
-		"timestamp" : "2021-11-07T13:50:11.326860Z",
+        "timestamp" : "2021-11-07T13:50:11.326860Z",
     	"lidarStatus" : "False",
-    	"obuStatus" : "False",
-		"actuatorsStatus" : "False",
-		"gnssStatus" : "False"
+        "obuStatus" : "False",
+        "actuatorsStatus" : "False",
+        "gnssStatus" : "False"
     }
 ```
 
@@ -103,13 +103,13 @@
 
 ```
     {
-		"timestamp" : "2021-11-07T13:50:11.326860Z",
+        "timestamp" : "2021-11-07T13:50:11.326860Z",
     	"platoonFormation" : "True",
     	"platoonDissmiss" : "True",
-		"referenceSpeed" : "2.71",
-		"goalLat" : "0.7",
-		"goalLong" : "2.1" 
-		"vehicleCompromised" : "False",
-		"vehicleCompromisedId" : "37"
+        "referenceSpeed" : "2.71",
+        "goalLat" : "0.7",
+        "goalLong" : "2.1" 
+        "vehicleCompromised" : "False",
+        "vehicleCompromisedId" : "37"
     }
 ```
