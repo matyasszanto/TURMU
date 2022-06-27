@@ -8,11 +8,11 @@ import json
 import mqtt_turmu
 
 # set up sigma parameters for rbf calculation
-sigmas = [1,    # sigma_lat
-          1,    # sigma_long
-          1,    # sigma_speed
-          1,    # sigma_width
-          1,    # sigma_length
+sigmas = [1,  # sigma_lat
+          1,  # sigma_long
+          1,  # sigma_speed
+          1,  # sigma_width
+          1,  # sigma_length
           ]
 
 
@@ -92,7 +92,8 @@ class Obstacle:
         creates a dictionary from the class parameters
 
         :return: {"obstacleId": obstacle_id,"type": object_type, "latitude": lat, "longitude": long,
-                  "speed": speed, "width": width, "length": length, "observations": no. of observations}
+                  "speed": speed, "width": width, "length": length, "observations": no. of observations
+                  "timestamp": latest_timestamp}
         """
 
         return {"obstacleId": self.obstacle_id,
@@ -102,7 +103,8 @@ class Obstacle:
                 "speed": self.speed,
                 "width": self.width,
                 "length": self.length,
-                "observations": self.number_of_observations
+                "observations": self.number_of_observations,
+                "timestamp": self.latest_timestamp,
                 }
 
     def as_json(self):
@@ -121,20 +123,32 @@ def write_obstacle_to_output(obstacle):
     pass
 
 
-def generate_default_obstacles_list(number_of_obstacles=3, cars=False):
+def generate_default_obstacles_list(number_of_obstacles=3, types=None, like: [Obstacle] = None):
     """
     Generates a list of Obstacle instances of length number_of_objects with random numeric parameters for
     long and lat, and with fixed values for types
 
     :param number_of_obstacles: number of objects to be generated
-    :param cars: (False) Boolean to select only "other" types of objects or
-                randomly choose from [vehicle, pedestrian, other]
-    :return: list of Obstacle instances with number of observations set to 5 to show them on the map
+    :param types: list of types from ["vehicle", "pedestrian", "other"]
+    :param like: list of obstacles that the generated obstacles should resemble
+    :return: ndarray of Obstacle instances with number of observations set to 5 to show them on the map
     """
-    list_of_objects = np.empty(number_of_obstacles, dtype=Obstacle)
-    object_types = (np.array(["vehicle", "pedestrian", "other"]) if not cars else np.array(["vehicle"]))
+    if not isinstance(types, list) and not isinstance(types[0], str):
+        types = ["vehicle", "pedestrian", "other"]
+    else:
+        for type_ in types:
+            if type_ in types not in ["vehicle", "pedestrian", "other"]:
+                types = ["vehicle", "pedestrian", "other"]
+                break
+
+    # get current time as formatted string
+    current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    # object list to be generated
+    list_of_obstacles = np.empty(number_of_obstacles, dtype=Obstacle)
+    obstacle_types = (np.array(types))
     for i in range(number_of_obstacles):
-        current_type = np.random.choice(object_types)
+        current_type = np.random.choice(obstacle_types)
         if current_type == "vehicle":
             current_width = 2
             current_length = 3.5
@@ -144,16 +158,34 @@ def generate_default_obstacles_list(number_of_obstacles=3, cars=False):
         else:
             current_width = 1
             current_length = 1
-        list_of_objects[i] = Obstacle(object_id=i,
-                                      object_type=current_type,
-                                      lat=10+np.random.uniform(-5, 5),
-                                      long=np.random.uniform(-1, 1),
-                                      speed=0,
-                                      width=current_width,
-                                      length=current_length,
-                                      number_of_observations=5,
-                                      )
-    return list_of_objects
+
+        list_of_obstacles[i] = Obstacle(object_id=i,
+                                        object_type=current_type,
+                                        lat=10 + np.random.uniform(-5, 5),
+                                        long=np.random.uniform(-1, 1),
+                                        speed=0,
+                                        width=current_width,
+                                        length=current_length,
+                                        number_of_observations=10,
+                                        first_timestamp=current_time,
+                                        latest_timestamp=current_time,
+                                        )
+    # if a list of obstacles is given
+    if like is not None:
+        for i, like_obstacle in enumerate(like):
+            list_of_obstacles[i] = Obstacle(object_id=like_obstacle.object_id,
+                                            object_type=like_obstacle.object_type,
+                                            lat=like_obstacle.lat + np.random.uniform(-5, 5),
+                                            long=like_obstacle.long + np.random.uniform(-1, 1),
+                                            speed=0,
+                                            width=like_obstacle.width,
+                                            length=like_obstacle.length,
+                                            number_of_observations=5,
+                                            first_timestamp=current_time,
+                                            latest_timestamp=current_time,
+                                            )
+
+    return list_of_obstacles
 
 
 class Map:
@@ -197,7 +229,7 @@ class Map:
                 updated_means = np.empty_like(mapped_means)
                 for j, (old_val, new_val) in enumerate(zip(mapped_means, new_vals)):
                     weighted_mean = old_val * n
-                    updated_means[j] = (weighted_mean + new_val) / (n+1)
+                    updated_means[j] = (weighted_mean + new_val) / (n + 1)
 
                 # update mapped obstacle means in map class
                 self.mapped_obstacles[i].lat = updated_means[0]
@@ -277,7 +309,7 @@ def calculate_rbf(point_1, point_2):
 
         # calculate rbf for every numeric parameter
         for i_rbf, sigma in enumerate(sigmas):
-            result += math.exp(-((point_1_params[i_rbf] - point_2_params[i_rbf])**2)/(2*sigma**2))
+            result += math.exp(-((point_1_params[i_rbf] - point_2_params[i_rbf]) ** 2) / (2 * sigma ** 2))
 
     return result
 
@@ -299,7 +331,6 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
 
     for i, map_point in enumerate(current_map.mapped_obstacles):
         for j, candidate_point in enumerate(candidates):
-
             # negative sign used because of cost minimization in magyar algorithm
             # while regular Gaussian rbf maximizes at perfect matches
             cost[i][j] = -calculate_rbf(candidate_point, map_point)
@@ -310,12 +341,14 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     return cost
 
 
-def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, cars=False):
-    new_observation = generate_default_obstacles_list(number_of_obstacles=number_of_obstacles, cars=cars)
-    for obstacle in new_observation:
+def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, types=None, like=None):
+    new_observation = generate_default_obstacles_list(number_of_obstacles=number_of_obstacles, types=types, like=None)
+    for i, obstacle in enumerate(new_observation):
+        # create json from obstacle
         obstacle_as_dict = obstacle.as_dict()
-        # add a timestamp
-        obstacle_as_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         obstacle_as_json = json.dumps(obstacle_as_dict)
+
+        # publish obstacle over mqtt
         mqtt_turmu.publish_obstacle(client, topic, obstacle_as_json)
-        print(f"obstacle {obstacle} published")
+
+        print(f"obstacle {i + 1} published")
