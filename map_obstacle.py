@@ -1,4 +1,3 @@
-import csv
 import datetime
 
 import numpy as np
@@ -27,6 +26,8 @@ class Obstacle:
                  width=0.0,
                  length=0.0,
                  number_of_observations=1,
+                 first_timestamp=None,
+                 latest_timestamp=None,
                  ):
         """
         Obstacle class
@@ -39,6 +40,8 @@ class Obstacle:
         :param width: width of object
         :param length: length of object
         :param number_of_observations: number of times object has already been observed
+        :param first_timestamp: timestamp of when obstacle was first received
+        :param latest_timestamp: timestamp of when obstacle was last seen
         """
 
         # parameters
@@ -50,19 +53,23 @@ class Obstacle:
         self.width = width
         self.length = length
         self.number_of_observations = number_of_observations
+        self.first_timestamp = first_timestamp
+        self.latest_timestamp = latest_timestamp
 
     def print(self):
         """
         print parameters of Obstacle instance
         """
-        print(f"Obstacle id:  {self.obstacle_id}")
-        print(f"Obstacle type:{self.obstacle_type}")
-        print(f"Lateral:      {self.lat}")
-        print(f"Longitudinal: {self.long}")
-        print(f"Speed:        {self.speed}")
-        print(f"Width:        {self.width}")
-        print(f"Length:       {self.length}")
-        print(f"Observations: {self.number_of_observations}")
+        print(f"Obstacle id:        {self.obstacle_id}")
+        print(f"Obstacle type:      {self.obstacle_type}")
+        print(f"Lateral:            {self.lat}")
+        print(f"Longitudinal:       {self.long}")
+        print(f"Speed:              {self.speed}")
+        print(f"Width:              {self.width}")
+        print(f"Length:             {self.length}")
+        print(f"Observations:       {self.number_of_observations}")
+        print(f"First observation:  {self.first_timestamp}")
+        print(f"Latest observation: {self.latest_timestamp}")
         print()
 
     def strip_params(self):
@@ -103,38 +110,13 @@ class Obstacle:
         return object_json
 
 
-def read_obstacles_from_input(input_file=""):
-    """
-    Read object parameters from input csv file
-    TODO changes for actual use-case
-
-    :param input_file: CSV file containing object parameters
-    :return: list of objects
-    """
-    list_of_obstacles = []
-    with open(input_file, "r") as file:
-        datareader = csv.reader(file)
-        for i, row in enumerate(datareader):
-            # TODO read input
-            list_of_obstacles.append(Obstacle(object_id=i,
-                                              # object_type=row.TODO,
-                                              # lat=row.TODO,
-                                              # long=row.TODO,
-                                              # speed=row.TODO,
-                                              # width=row.TODO,
-                                              # length=row.TODO,
-                                              # number_of_observations=row.TODO,
-                                              )
-                                     )
-        return list_of_obstacles
-
-
-def write_obstacle_to_output(object_full):
+def write_obstacle_to_output(obstacle):
     """
     method to write new objects to MQTT or output
-    :param object_full: Obstacle instance to write
+
+    :param obstacle: Obstacle instance to write
     """
-    # TODO write_object_to_output method
+    # TODO write_object_to_output method - if necessary?
 
     pass
 
@@ -187,7 +169,10 @@ class Map:
         self.number_of_mapped_obstacles = len(mapped_obstacles)
         self.obs_threshold_for_new_obstacle_addition = obs_threshold_for_new_obstacle_addition
 
-    def update_map(self, paired_mapped_obstacles_indices, paired_newly_observed_obstacle_indices, newly_observed_obstacles):
+    def update_map(self, paired_mapped_obstacles_indices,
+                   paired_newly_observed_obstacle_indices,
+                   newly_observed_obstacles,
+                   ):
         """
         Method for updating means of mapped objects with new observation
 
@@ -242,7 +227,7 @@ def find_new_obstacles(currently_mapped_obstacles, newly_observed_obstacles):
     Finds the best pairings and returns indices of newly found objects
 
     :param currently_mapped_obstacles: instance of map_object.Map class
-    :param newly_observed_objects: array of instances of map_object.Obstacle class
+    :param newly_observed_obstacles: array of instances of map_object.Obstacle class
     :return: four values:
                 - found_new_object (Boolean): True, if the number of observed objects is greater
                                               than the number of  mapped objects
@@ -325,8 +310,8 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     return cost
 
 
-def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, cars=True):
-    new_observation = generate_default_obstacles_list(number_of_obstacles=number_of_obstacles, cars=True)
+def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, cars=False):
+    new_observation = generate_default_obstacles_list(number_of_obstacles=number_of_obstacles, cars=cars)
     for obstacle in new_observation:
         obstacle_as_dict = obstacle.as_dict()
         # add a timestamp
@@ -334,4 +319,3 @@ def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, cars=True):
         obstacle_as_json = json.dumps(obstacle_as_dict)
         mqtt_turmu.publish_obstacle(client, topic, obstacle_as_json)
         print(f"obstacle {obstacle} published")
-
