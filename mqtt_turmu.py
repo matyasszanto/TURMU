@@ -52,7 +52,7 @@ def publish_obstacle(client, topic, object_as_json_string):
         print("Error. Couldn't publish message")
 
 
-def subscribe(client: mqtt_client, topic, obstacles, timestamps):
+def subscribe(client: mqtt_client, topic, obstacles):
 
     def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
@@ -71,9 +71,9 @@ def subscribe(client: mqtt_client, topic, obstacles, timestamps):
                 width=message_dict["width"],
                 length=message_dict["length"],
                 number_of_observations=message_dict["observations"],
+                latest_timestamp=datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"),
             )
             obstacles.append(obstacle)
-            timestamps.append(datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"))
         except Exception as e:
             print(e)
             print("The message was:")
