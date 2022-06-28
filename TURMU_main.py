@@ -14,19 +14,14 @@ if __name__ == "__main__":
         obstacles_list = mo.read_obstacles_from_input(input_dir)
 
     else:
-        obstacles_list = mo.generate_default_obstacles_list(cars=True)
+        obstacles_list = mo.generate_default_obstacles_list()
 
     for item in obstacles_list:
         item.print()
 
-    current_map = mo.Map(mapped_obstacles=obstacles_list,
-                         obs_threshold_for_new_obstacle_addition=1
-                         )
-    # TODO candidates_map = mo.Map(mapped_objects=None)
+    current_map = mo.Map(mapped_obstacles=obstacles_list, observ_threshold_for_new_obstacle_addition=1)
 
-    new_observation = mo.generate_default_obstacles_list(number_of_obstacles=3,
-                                                         cars=True
-                                                         )
+    new_observation = mo.generate_default_obstacles_list(number_of_obstacles=3)
 
     new_obstacle_found, new_obstacle_idx, paired_mapped_obstacle_idx, paired_new_obstacle_idx = \
         mo.find_new_obstacles(current_map,
@@ -38,7 +33,6 @@ if __name__ == "__main__":
                                      new_observation
                                      )
 
-        # TODO
         """
         Candidates map logic:
         
