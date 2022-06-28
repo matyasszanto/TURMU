@@ -83,8 +83,6 @@ def subscribe(client: mqtt_client, topic, obstacles):
     client.subscribe(topic)
     client.on_message = on_message
 
-    # TODO introduce new loop here
-
 
 def parse_message(message):
     msg_raw = message.payload.decode()
