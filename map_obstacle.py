@@ -18,8 +18,8 @@ sigmas = [1,  # sigma_lat
 
 class Obstacle:
     def __init__(self,
-                 object_id=0,
-                 object_type="empty",
+                 obstacle_id=0,
+                 obstacle_type="empty",
                  lat=0,
                  long=0,
                  speed=0.0,
@@ -32,21 +32,21 @@ class Obstacle:
         """
         Obstacle class
 
-        :param object_id: ID number of object
-        :param object_type: type of object: vehicle, pedestrian, not_specified
-        :param lat: lateral coordinates of object
-        :param long: longitudinal coordinates of object
-        :param speed: speed of object
-        :param width: width of object
-        :param length: length of object
-        :param number_of_observations: number of times object has already been observed
+        :param obstacle_id: ID number of obstacle
+        :param obstacle_type: type of obstacle: vehicle, pedestrian, not_specified
+        :param lat: lateral coordinates of obstacle
+        :param long: longitudinal coordinates of obstacle
+        :param speed: speed of obstacle
+        :param width: width of obstacle
+        :param length: length of obstacle
+        :param number_of_observations: number of times obstacle has already been observed
         :param first_timestamp: timestamp of when obstacle was first received
         :param latest_timestamp: timestamp of when obstacle was last seen
         """
 
         # parameters
-        self.obstacle_id = object_id
-        self.obstacle_type = object_type  # vehicle, pedestrian, N/S
+        self.obstacle_id = obstacle_id
+        self.obstacle_type = obstacle_type  # vehicle, pedestrian, N/S
         self.lat = lat
         self.long = long
         self.speed = speed
@@ -78,20 +78,20 @@ class Obstacle:
 
         :return: numpy array of lat, long, speed, width, length
         """
-        object_without_id_and_type = np.array([self.lat,
-                                               self.long,
-                                               self.speed,
-                                               self.width,
-                                               self.length,
-                                               ]
-                                              )
-        return object_without_id_and_type
+        obstacle_without_id_and_type = np.array([self.lat,
+                                                 self.long,
+                                                 self.speed,
+                                                 self.width,
+                                                 self.length,
+                                                 ]
+                                                )
+        return obstacle_without_id_and_type
 
     def as_dict(self):
         """
         creates a dictionary from the class parameters
 
-        :return: {"obstacleId": obstacle_id,"type": object_type, "latitude": lat, "longitude": long,
+        :return: {"obstacleId": obstacle_id,"type": obstacle_type, "latitude": lat, "longitude": long,
                   "speed": speed, "width": width, "length": length, "observations": no. of observations
                   "timestamp": latest_timestamp}
         """
@@ -108,79 +108,94 @@ class Obstacle:
                 }
 
     def as_json(self):
-        object_json = json.dumps(self.as_dict())
-        return object_json
+        obstacle_json = json.dumps(self.as_dict())
+        return obstacle_json
 
 
-def write_obstacle_to_output(obstacle):
+def write_obstacle_to_output(obstacle: Obstacle):
     """
-    method to write new objects to MQTT or output
+    method to write new obstacles to MQTT or output
 
     :param obstacle: Obstacle instance to write
     """
-    # TODO write_object_to_output method - if necessary?
+    # TODO write_obstacle_to_output method - if necessary?
 
     pass
 
 
-def generate_default_obstacles_list(number_of_obstacles=3, types=None, like: [Obstacle] = None):
+def generate_default_obstacles_list(number_of_obstacles=3,
+                                    types=None,
+                                    number_of_observations=10,
+                                    like: [Obstacle] = None
+                                    ):
     """
-    Generates a list of Obstacle instances of length number_of_objects with random numeric parameters for
+    Generates a list of Obstacle instances of length number_of_obstacles with random numeric parameters for
     long and lat, and with fixed values for types
 
-    :param number_of_obstacles: number of objects to be generated
+    :param number_of_obstacles: number of obstacles to be generated
+                                if "like" is not None, this parameter is not used.
     :param types: list of types from ["vehicle", "pedestrian", "other"]
+                  if "like" is not None, this parameter is not used.
+    :param number_of_observations: number of observations parameter of generated obstacles
+                                   if "like" is not None, this parameter is not used.
     :param like: list of obstacles that the generated obstacles should resemble
     :return: ndarray of Obstacle instances with number of observations set to 5 to show them on the map
     """
-    if not isinstance(types, list) and not isinstance(types[0], str):
-        types = ["vehicle", "pedestrian", "other"]
-    else:
-        for type_ in types:
-            if type_ in types not in ["vehicle", "pedestrian", "other"]:
-                types = ["vehicle", "pedestrian", "other"]
-                break
 
     # get current time as formatted string
     current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-    # object list to be generated
-    list_of_obstacles = np.empty(number_of_obstacles, dtype=Obstacle)
-    obstacle_types = (np.array(types))
-    for i in range(number_of_obstacles):
-        current_type = np.random.choice(obstacle_types)
-        if current_type == "vehicle":
-            current_width = 2
-            current_length = 3.5
-        elif current_type == "pedestrian":
-            current_width = 0.4
-            current_length = 0.4
-        else:
-            current_width = 1
-            current_length = 1
+    number_of_obstacles = number_of_obstacles if like is None else len(like)
 
-        list_of_obstacles[i] = Obstacle(object_id=i,
-                                        object_type=current_type,
-                                        lat=10 + np.random.uniform(-5, 5),
-                                        long=np.random.uniform(-1, 1),
-                                        speed=0,
-                                        width=current_width,
-                                        length=current_length,
-                                        number_of_observations=10,
-                                        first_timestamp=current_time,
-                                        latest_timestamp=current_time,
-                                        )
-    # if a list of obstacles is given
-    if like is not None:
+    # obstacle list to be generated
+    list_of_obstacles = np.empty(number_of_obstacles, dtype=Obstacle)
+
+    if like is None:
+        # check types var
+        if not isinstance(types, list) and not isinstance(types[0], str):
+            types = ["vehicle", "pedestrian", "other"]
+        else:
+            for type_ in types:
+                if type_ not in ["vehicle", "pedestrian", "other"]:
+                    types = ["vehicle", "pedestrian", "other"]
+                    break
+
+        obstacle_types = (np.array(types))
+        for i in range(number_of_obstacles):
+            current_type = np.random.choice(obstacle_types)
+            if current_type == "vehicle":
+                current_width = 2
+                current_length = 3.5
+            elif current_type == "pedestrian":
+                current_width = 0.4
+                current_length = 0.4
+            else:
+                current_width = 1
+                current_length = 1
+
+            list_of_obstacles[i] = Obstacle(obstacle_id=i,
+                                            obstacle_type=current_type,
+                                            lat=np.random.uniform(-15, 15),
+                                            long=np.random.uniform(-5, 5),
+                                            speed=0,
+                                            width=current_width,
+                                            length=current_length,
+                                            number_of_observations=number_of_observations,
+                                            first_timestamp=current_time,
+                                            latest_timestamp=current_time,
+                                            )
+
+    # if a list of obstacles is given in "like"
+    else:
         for i, like_obstacle in enumerate(like):
-            list_of_obstacles[i] = Obstacle(object_id=like_obstacle.object_id,
-                                            object_type=like_obstacle.object_type,
+            list_of_obstacles[i] = Obstacle(obstacle_id=i,
+                                            obstacle_type=like_obstacle.obstacle_type,
                                             lat=like_obstacle.lat + np.random.uniform(-5, 5),
                                             long=like_obstacle.long + np.random.uniform(-1, 1),
                                             speed=0,
                                             width=like_obstacle.width,
                                             length=like_obstacle.length,
-                                            number_of_observations=5,
+                                            number_of_observations=1,
                                             first_timestamp=current_time,
                                             latest_timestamp=current_time,
                                             )
@@ -189,41 +204,42 @@ def generate_default_obstacles_list(number_of_obstacles=3, types=None, like: [Ob
 
 
 class Map:
-    def __init__(self, mapped_obstacles, obs_threshold_for_new_obstacle_addition=0):
+    def __init__(self, mapped_obstacles, observ_threshold_for_new_obstacle_addition=0):
         """
         Class for mapped obstacles
 
         :param mapped_obstacles: List of Obstacle instances
-        :param obs_threshold_for_new_obstacle_addition: threshold value, denoting
+        :param observ_threshold_for_new_obstacle_addition: threshold value, denoting
                                                  how many observations shall a new value be added
         """
         self.mapped_obstacles = mapped_obstacles
-        self.number_of_mapped_obstacles = len(mapped_obstacles)
-        self.obs_threshold_for_new_obstacle_addition = obs_threshold_for_new_obstacle_addition
+        self.number_of_mapped_obstacles = len(mapped_obstacles) if self.mapped_obstacles is not None else 0
+        self.observ_threshold_for_new_obstacle_addition = observ_threshold_for_new_obstacle_addition
 
-    def update_map(self, paired_mapped_obstacles_indices,
+    def update_map(self,
+                   paired_mapped_obstacles_indices,
                    paired_newly_observed_obstacle_indices,
                    newly_observed_obstacles,
                    ):
         """
-        Method for updating means of mapped objects with new observation
+        Method for updating means and timestamps of mapped obstacles with new observation
 
-        :param paired_mapped_obstacles_indices: output of find_new_objects function
-        :param paired_newly_observed_obstacle_indices: output of find_new_objects function
-        :param newly_observed_obstacles: array of instances of map_object.Obstacle class
+        :param paired_mapped_obstacles_indices: output of find_new_obstacles function
+        :param paired_newly_observed_obstacle_indices: output of find_new_obstacles function
+        :param newly_observed_obstacles: array of instances of map_obstacle.Obstacle class
         """
         for i, mapped_obstacle_mean in enumerate(self.mapped_obstacles):
 
             # check if position update is necessary
             if i in paired_mapped_obstacles_indices:
 
-                # get means and no_observations from paired mapped object
+                # get means and no_observations from paired mapped obstacle
                 mapped_means = self.mapped_obstacles[i].strip_params()
                 n = self.mapped_obstacles[i].number_of_observations
 
-                # get values from newly observed paired object
-                paired_newly_observed_object_index = paired_newly_observed_obstacle_indices[i]
-                new_vals = newly_observed_obstacles[paired_newly_observed_object_index].strip_params()
+                # get values from newly observed paired obstacle
+                paired_newly_observed_obstacle_index = paired_newly_observed_obstacle_indices[i]
+                new_vals = newly_observed_obstacles[paired_newly_observed_obstacle_index].strip_params()
 
                 # calculate new means
                 updated_means = np.empty_like(mapped_means)
@@ -241,53 +257,83 @@ class Map:
                 # increase number of observations for obstacle
                 self.mapped_obstacles[i].number_of_observations += 1
 
-    def add_new_obstacle(self, new_obstacle_indices, newly_observed_obstacles):
+                # update latest_timestamp of matched object
+                self.mapped_obstacles[i].latest_timestamp = \
+                    newly_observed_obstacles[paired_newly_observed_obstacle_index].latest_timestamp
+
+    def subset_in_observed_area(self, sensor_location=None, observable_area_radius=10):
         """
-        Method to include found new objects into map
+        Function to return the subset of obstacles that are in the area observable by the sensor
+        at the time of measurement
 
-        :param new_obstacle_indices: indices of new objects in newly_observed_objects
-        :param newly_observed_obstacles: array of instances of map_object.Obstacle class
+        :param sensor_location: current location (latitude and longitude) of the Lidar
+        :param observable_area_radius: constant that describes the size of the radius of the observable area
+        :return: 2 values:
+                    1. the observable part of the map as a map_obstacle
+                    2. a lookup table between the obstacle indices of the input map and its observable subset
         """
+        if sensor_location is None:
+            sensor_location = [0, 0]
 
-        # TODO candidate map logic
-        for i in new_obstacle_indices:
-            self.mapped_obstacles.append(newly_observed_obstacles[i])
+        # TODO write the observable map subset function logic
+
+        # TODO write the lookup-table of entire map to observable map logic
+
+        lookup_table = dict(zip(range(len(self.mapped_obstacles)), range(len(self.mapped_obstacles))))
+
+        return self, lookup_table
+
+    def highest_id(self):
+        """
+        finds the highest id of the obstacles contained in the map
+
+        :return: highest id
+        """
+        ids = []
+        for obstacle in self.mapped_obstacles:
+            ids.append(obstacle.obstacle_id)
+
+        return max(ids)
 
 
-def find_new_obstacles(currently_mapped_obstacles, newly_observed_obstacles):
+def add_obstacles_above_threshold(candidate_map: Map, actual_map: Map):
     """
-    Finds the best pairings and returns indices of newly found objects
+    Method to include obstacles from candidate map to actual map
+        1. Check if obstacle has been observed more times, then actual map threshold
+        2. Add obstacle to actual map
+        3. Remove obstacle from candidate map
 
-    :param currently_mapped_obstacles: instance of map_object.Map class
-    :param newly_observed_obstacles: array of instances of map_object.Obstacle class
-    :return: four values:
-                - found_new_object (Boolean): True, if the number of observed objects is greater
-                                              than the number of  mapped objects
-
-                - new_object_indices (Ndarray): indices of new objects in newly_observed_objects
-
-                - paired_mapped_object_indices (Ndarray): indices
-
-                - paired_new_object_indices (Ndarray): indices of paired object in newly_observed_objects
+    :param actual_map: map containing already mapped obstacles
+    :param candidate_map: map containing obstacles with candidate obstacles
     """
 
-    # calculate cost matrix between the newly observed and the mapped objects
-    costs = calculate_cost_of_observation(current_map=currently_mapped_obstacles,
+    for obstacle in candidate_map.mapped_obstacles:
+        if obstacle.number_of_observations > actual_map.observ_threshold_for_new_obstacle_addition:
+            actual_map.mapped_obstacles.append(obstacle)
+            candidate_map.mapped_obstacles.remove(obstacle)
+
+
+def pair_obstacles(current_map, newly_observed_obstacles):
+    """
+    Finds the best pairings and returns indices of newly found obstacles
+
+    :param current_map: instance of map_obstacle.Map class
+    :param newly_observed_obstacles: array of instances of map_obstacle.Obstacle class
+    :return: 2 values:
+                1. paired_mapped_obstacle_indices (Ndarray): indices
+                2. paired_new_obstacle_indices (Ndarray): indices of paired obstacle in newly_observed_obstacles
+    """
+
+    # calculate cost matrix between the newly observed and the mapped obstacles
+    costs = calculate_cost_of_observation(current_map=current_map,
                                           candidates=newly_observed_obstacles,
                                           threshold=0.8,  # TODO optimize threshold value
                                           )
 
     # find pairings
-    # TODO set up threshold value for pairings
     paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices = magyar(costs)
 
-    # TODO logic for found_new_object
-    found_new_object = costs.shape[0] != costs.shape[1]
-
-    # TODO find new object indices
-    new_object_indices = np.nan
-
-    return found_new_object, new_object_indices, paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices
+    return paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices
 
 
 def calculate_rbf(point_1, point_2):
@@ -301,7 +347,7 @@ def calculate_rbf(point_1, point_2):
 
     result = 0
 
-    # check if objects are the same type
+    # check if obstacles are the same type
     if point_1.obstacle_type == point_2.obstacle_type:
         # get numeric parameters into an array
         point_1_params = point_1.strip_params()
@@ -319,15 +365,15 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     Calculate cost matrix of an observation
 
     :param threshold: threshold value to avoid false pairings
-    :param current_map: instance of map_object.Map
-    :param candidates: array of instances of map_object.Obstacle class
+    :param current_map: instance of map_obstacle.Map
+    :param candidates: array of instances of map_obstacle.Obstacle class
     :return: cost matrix used for the magyar algorithm
     """
-    # multiply object threshold to
+    # multiply obstacle threshold to all dimensions of an obstacle
     cost_threshold = threshold * 5
 
     # shape of cost matrix: mapped objs(rows) x candidate objs(columns)
-    cost = np.empty((current_map.mapped_obstacles.shape[0], candidates.shape[0]))
+    cost = np.empty((len(current_map.mapped_obstacles), len(candidates)))
 
     for i, map_point in enumerate(current_map.mapped_obstacles):
         for j, candidate_point in enumerate(candidates):
@@ -342,8 +388,12 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
 
 
 def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, types=None, like=None):
-    new_observation = generate_default_obstacles_list(number_of_obstacles=number_of_obstacles, types=types, like=None)
+    new_observation = generate_default_obstacles_list(number_of_obstacles=number_of_obstacles,
+                                                      types=types,
+                                                      like=like
+                                                      )
     for i, obstacle in enumerate(new_observation):
+
         # create json from obstacle
         obstacle_as_dict = obstacle.as_dict()
         obstacle_as_json = json.dumps(obstacle_as_dict)
