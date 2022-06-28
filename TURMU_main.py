@@ -24,14 +24,10 @@ if __name__ == "__main__":
     new_observation = mo.generate_default_obstacles_list(number_of_obstacles=3)
 
     new_obstacle_found, new_obstacle_idx, paired_mapped_obstacle_idx, paired_new_obstacle_idx = \
-        mo.find_new_obstacles(current_map,
-                              new_observation
-                              )
+        mo.pair_obstacles(current_map, new_observation)
 
     if new_obstacle_found:
-        current_map.add_new_obstacle(new_obstacle_idx,
-                                     new_observation
-                                     )
+        current_map.add_obstacles_above_threshold(new_obstacle_idx)
 
         """
         Candidates map logic:
