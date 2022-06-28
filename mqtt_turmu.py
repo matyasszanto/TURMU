@@ -4,7 +4,6 @@ import ssl
 
 # import for functionality
 import random
-import time
 from datetime import datetime
 import json
 import map_obstacle as mo
@@ -43,8 +42,8 @@ def connect_mqtt(broker, port, client_id, username, password, ca_certs_path, cer
     return client
 
 
-def publish_obstacle(client, topic, object_as_json_string):
-    msg = object_as_json_string
+def publish_obstacle(client, topic, obstacle_as_json_string):
+    msg = obstacle_as_json_string
     result = client.publish(topic, msg)
     # result: [0, 1]
     status = result[0]
@@ -57,22 +56,26 @@ def subscribe(client: mqtt_client, topic, obstacles):
     def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
         try:
-            # create object from read data
+            # create obstacle from read data
             """
-            {"obstacleId": obstacle_id,"type": object_type, "latitude": lat, "longitude": long,
+            {"obstacleId": obstacle_id,"type": obstacle_type, "latitude": lat, "longitude": long,
              "speed": speed, "width": width, "length": length, "observations": no. of observations}
             """
-            obstacle = mo.Obstacle(
-                object_id=message_dict["obstacleId"],
-                object_type=message_dict["type"],
-                lat=message_dict["latitude"],
-                long=message_dict["longitude"],
-                speed=message_dict["speed"],
-                width=message_dict["width"],
-                length=message_dict["length"],
-                number_of_observations=message_dict["observations"],
-                latest_timestamp=datetime.strptime(message_dict["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"),
-            )
+            obstacle = mo.Obstacle(obstacle_id=message_dict["obstacleId"],
+                                   obstacle_type=message_dict["type"],
+                                   lat=message_dict["latitude"],
+                                   long=message_dict["longitude"],
+                                   speed=message_dict["speed"],
+                                   width=message_dict["width"],
+                                   length=message_dict["length"],
+                                   number_of_observations=message_dict["observations"],
+                                   latest_timestamp=datetime.strptime(message_dict["timestamp"],
+                                                                      "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                      ),
+                                   first_timestamp=datetime.strptime(message_dict["timestamp"],
+                                                                     "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                     ),
+                                   )
             obstacles.append(obstacle)
         except Exception as e:
             print(e)
