@@ -125,7 +125,7 @@ def write_obstacle_to_output(obstacle: Obstacle):
 
 def generate_default_obstacles_list(number_of_obstacles=3,
                                     types=None,
-                                    number_of_observations=10,
+                                    number_of_observations=1,
                                     like: [Obstacle] = None
                                     ):
     """
@@ -293,7 +293,9 @@ class Map:
         for obstacle in self.mapped_obstacles:
             ids.append(obstacle.obstacle_id)
 
-        return max(ids)
+        highest_id = 0 if len(ids) == 0 else max(ids)
+
+        return highest_id
 
 
 def add_obstacles_above_threshold(candidate_map: Map, actual_map: Map):
