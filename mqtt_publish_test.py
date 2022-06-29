@@ -24,7 +24,11 @@ def run(like: [mo.Obstacle] = None):
                                      keyfile_path
                                      )
 
-    mo.turmu_offline_mode_publish(client=client, topic=topic, number_of_obstacles=3, types=["other"], like=like)
+    mo.turmu_offline_mode_publish(client=client,
+                                  topic=topic,
+                                  number_of_obstacles=3,
+                                  types=["other"],
+                                  like=like)
     client.disconnect()
 
 
