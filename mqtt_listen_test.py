@@ -1,6 +1,7 @@
 import random
 import time
 
+import map_obstacle
 import mqtt_turmu
 
 # parameters for Tecnalia MQTT broker
@@ -20,11 +21,21 @@ client = mqtt_turmu.connect_mqtt(broker,
                                  )
 
 obstacles = []
-timestamps = []
+ego = map_obstacle.Egovehicle()
 
-for i in range(10):
-    client.loop(1)
+while len(obstacles) == 0:
+    client.loop(10)
     mqtt_turmu.subscribe(client=client, topic=topic, obstacles=obstacles)
-    print(f"number of received obstacles: {len(obstacles)}")
-    print(f"loop{i} done\n")
-    time.sleep(1)
+
+print("első üzenet megvan")
+for obst in obstacles:
+    obst.print()
+
+"""
+while len(ego.timestamps) == 0:
+    client.loop(0)
+    mqtt_turmu.subscribe(client=client, topic=topic, sensor_locations=ego.sensor_locations, timestamps=ego.timestamps)
+
+print("második üzenet megvan")
+print(ego.sensor_locations)
+"""
