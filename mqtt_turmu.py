@@ -1,4 +1,5 @@
 # imports for mqtt
+import numpy as np
 from paho.mqtt import client as mqtt_client
 import ssl
 
@@ -42,41 +43,52 @@ def connect_mqtt(broker, port, client_id, username, password, ca_certs_path, cer
     return client
 
 
-def publish_obstacle(client, topic, obstacle_as_json_string):
-    msg = obstacle_as_json_string
+def publish_obstacle(client, topic, obstacle):
+    msg = obstacle.as_json()
     result = client.publish(topic, msg)
-    # result: [0, 1]
     status = result[0]
     if status == 1:
         print("Error. Couldn't publish message")
 
 
-def subscribe(client: mqtt_client, topic, obstacles):
+def publish_obstacles(client, topic, obstacles):
+    msg = json.dumps(obstacles)
+    result = client.publish(topic, msg)
+    status = result[0]
+    if status == 1:
+        print("Error. Couldn't publish message")
+
+
+def subscribe(client: mqtt_client, topic, obstacles=None, timestamps=None, sensor_locations=None):
+
+    if obstacles is None:
+        obstacles = []
+    if timestamps is None:
+        timestamps = []
+    if sensor_locations is None:
+        sensor_locations = []
 
     def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
         try:
-            # create obstacle from read data
-            """
-            {"obstacleId": obstacle_id,"type": obstacle_type, "latitude": lat, "longitude": long,
-             "speed": speed, "width": width, "length": length, "observations": no. of observations}
-            """
-            obstacle = mo.Obstacle(obstacle_id=message_dict["obstacleId"],
-                                   obstacle_type=message_dict["type"],
-                                   lat=message_dict["latitude"],
-                                   long=message_dict["longitude"],
-                                   speed=message_dict["speed"],
-                                   width=message_dict["width"],
-                                   length=message_dict["length"],
-                                   number_of_observations=message_dict["observations"],
-                                   latest_timestamp=datetime.strptime(message_dict["timestamp"],
-                                                                      "%Y-%m-%dT%H:%M:%S.%fZ",
-                                                                      ),
-                                   first_timestamp=datetime.strptime(message_dict["timestamp"],
-                                                                     "%Y-%m-%dT%H:%M:%S.%fZ",
-                                                                     ),
-                                   )
-            obstacles.append(obstacle)
+            if "obstacles" in message_dict:
+                for obstacle_dict in message_dict["obstacles"]:
+                    obstacle_ = mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_dict)
+                    obstacles.append(obstacle_)
+
+            if "obstacleId" in message_dict:
+                # create obstacle from read data if the message is for an observed obstacle
+                """
+                {"obstacleId": obstacle_id,"type": obstacle_type, "latitude": lat, "longitude": long,
+                 "speed": speed, "width": width, "length": length, "observations": no. of observations}
+                """
+                obstacle_ = mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(message_dict)
+                obstacles.append(obstacle_)
+            elif "vehicleId" in message_dict:
+                # read sensor location and timestamp from ego-vehicle if the message isf for and ego-vehicle
+                timestamps.append(message_dict["timestamp"])
+                sensor_locations.append([message_dict["latitude"], message_dict["longitude"]])
+
         except Exception as e:
             print(e)
             print("The message was:")
