@@ -108,19 +108,21 @@ class Obstacle:
                 }
 
     def as_json(self):
-        obstacle_json = json.dumps(self.as_dict())
+        obstacle_json = json.dumps(self.as_dict(), indent=4, default=str)
         return obstacle_json
 
 
+"""
 def write_obstacle_to_output(obstacle: Obstacle):
-    """
+    "
     method to write new obstacles to MQTT or output
 
     :param obstacle: Obstacle instance to write
-    """
+    "
     # TODO write_obstacle_to_output method - if necessary?
 
     pass
+"""
 
 
 def generate_default_obstacles_list(number_of_obstacles=3,
@@ -203,8 +205,29 @@ def generate_default_obstacles_list(number_of_obstacles=3,
     return list_of_obstacles
 
 
+def obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_as_dict=None):
+    if obstacle_as_dict is None:
+        obstacle_as_dict = {}
+    generated_obstacle = Obstacle(obstacle_id=0,
+                                  obstacle_type="other",
+                                  lat=obstacle_as_dict["latitude"],
+                                  long=obstacle_as_dict["longitude"],
+                                  speed=obstacle_as_dict["speed"],
+                                  width=obstacle_as_dict["width"],
+                                  length=obstacle_as_dict["length"],
+                                  number_of_observations=1,
+                                  latest_timestamp=datetime.datetime.strptime(obstacle_as_dict["timestamp"],
+                                                                              "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                              ),
+                                  first_timestamp=datetime.datetime.strptime(obstacle_as_dict["timestamp"],
+                                                                             "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                             ),
+                                  )
+    return generated_obstacle
+
+
 class Map:
-    def __init__(self, mapped_obstacles, observ_threshold_for_new_obstacle_addition=0):
+    def __init__(self, mapped_obstacles=None, observ_threshold_for_new_obstacle_addition=0):
         """
         Class for mapped obstacles
 
@@ -212,6 +235,8 @@ class Map:
         :param observ_threshold_for_new_obstacle_addition: threshold value, denoting
                                                  how many observations shall a new value be added
         """
+        if mapped_obstacles is None:
+            mapped_obstacles = []
         self.mapped_obstacles = mapped_obstacles
         self.number_of_mapped_obstacles = len(mapped_obstacles) if self.mapped_obstacles is not None else 0
         self.observ_threshold_for_new_obstacle_addition = observ_threshold_for_new_obstacle_addition
@@ -261,7 +286,7 @@ class Map:
                 self.mapped_obstacles[i].latest_timestamp = \
                     newly_observed_obstacles[paired_newly_observed_obstacle_index].latest_timestamp
 
-    def subset_in_observed_area(self, sensor_location=None, observable_area_radius=10):
+    def subset_in_observed_area(self, sensor_location=None, observable_area_radius=50):
         """
         Function to return the subset of obstacles that are in the area observable by the sensor
         at the time of measurement
@@ -269,19 +294,26 @@ class Map:
         :param sensor_location: current location (latitude and longitude) of the Lidar
         :param observable_area_radius: constant that describes the size of the radius of the observable area
         :return: 2 values:
-                    1. the observable part of the map as a map_obstacle
+                    1. the observable part of the map as a map_obstacle.Map
                     2. a lookup table between the obstacle indices of the input map and its observable subset
         """
         if sensor_location is None:
             sensor_location = [0, 0]
 
-        # TODO write the observable map subset function logic
+        obstacles_subset = []
 
-        # TODO write the lookup-table of entire map to observable map logic
+        for i, obstacle in enumerate(self.mapped_obstacles):
+            # calculate distance from sensor location
+            distance = 0
+            for p1, p2 in zip(sensor_location, [obstacle.lat, obstacle.long]):
+                distance += (p2 - p1)**2
+            distance = math.sqrt(distance)
+            if distance < observable_area_radius:
+                obstacles_subset.append(obstacle)
 
-        lookup_table = dict(zip(range(len(self.mapped_obstacles)), range(len(self.mapped_obstacles))))
+        map_subset = Map(obstacles_subset, self.observ_threshold_for_new_obstacle_addition)
 
-        return self, lookup_table
+        return map_subset
 
     def highest_id(self):
         """
@@ -384,6 +416,7 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
             cost[i][j] = -calculate_rbf(candidate_point, map_point)
 
     # check if
+    # TODO - neg(cost thresh)??
     cost[cost > cost_threshold] = 0
 
     return cost
@@ -396,11 +429,66 @@ def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, types=None,
                                                       )
     for i, obstacle in enumerate(new_observation):
 
-        # create json from obstacle
-        obstacle_as_dict = obstacle.as_dict()
-        obstacle_as_json = json.dumps(obstacle_as_dict)
-
         # publish obstacle over mqtt
-        mqtt_turmu.publish_obstacle(client, topic, obstacle_as_json)
+        mqtt_turmu.publish_obstacle(client, topic, obstacle)
 
+        # print a debug message
         print(f"obstacle {i + 1} published")
+
+
+class Egovehicle:
+    """
+    Class for egovehicle timestamps and sensor locations
+    """
+
+    def __init__(self, timestamps=None, sensor_locations=None):
+        """
+        Method to initialize Egovehicle
+        :param timestamps: array of timestamps
+        :param sensor_locations: array of sensor locations as [latitude, longitude]
+        """
+        if sensor_locations is None:
+            sensor_locations = []
+        if timestamps is None:
+            timestamps = []
+        self.timestamps = timestamps
+        self.sensor_locations = sensor_locations
+
+    def get_published_info(self, client, topic):
+        """
+        Method that listens to the MQTT broker for egovehicle payloads
+
+        :param client: MQTT client
+        :param topic: egovehicle topic
+        """
+
+        # read egovehicle data, get the one,
+        # where the publishing time is closest to the sensor measurement
+        client.loop(1)
+        mqtt_turmu.subscribe(client=client,
+                             topic=topic,
+                             timestamps=self.timestamps,
+                             sensor_locations=self.sensor_locations
+                             )
+
+    def get_sensor_location_at_measurement(self, obstacle: Obstacle):
+        """
+        Get the sensor location at (or closest to the time of the measurement)
+
+        :param obstacle: mo.Obstacle, to which the closest measurement is sought (in time)
+        :return: sensor location at the closest measurement
+        """
+        dt = np.empty(0)
+        for timestamp in self.timestamps:
+            measurement_timestamp = datetime.datetime.strptime(obstacle.latest_timestamp,
+                                                               "%Y-%m-%dT%H:%M:%S.%fZ")
+            current_timestamp = datetime.datetime.strptime(timestamp,
+                                                           "%Y-%m-%dT%H:%M:%S.%fZ")
+
+            dt = np.append(dt, abs(measurement_timestamp - current_timestamp))
+
+        i = dt.argmin()
+
+        sensor_location_at_measurement = self.sensor_locations[i]
+
+        return sensor_location_at_measurement
