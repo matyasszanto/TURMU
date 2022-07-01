@@ -7,7 +7,7 @@ import mqtt_turmu
 import map_obstacle as mo
 
 
-def run(like: [mo.Obstacle] = None, number_of_obstacles=3):
+def run(like: [mo.Obstacle] = None, number_of_obstacles=3, latitude_random_radius=10, longitude_random_radius=10):
     # parameters for Tecnalia MQTT broker
     broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path = \
         mqtt_turmu.load_default_params()
@@ -24,32 +24,29 @@ def run(like: [mo.Obstacle] = None, number_of_obstacles=3):
                                      keyfile_path
                                      )
 
-    mo.turmu_offline_mode_publish(client=client,
-                                  topic=topic,
-                                  number_of_obstacles=number_of_obstacles,
-                                  types=["other"],
-                                  like=like)
-
     obsts = mo.generate_default_obstacles_list(number_of_obstacles=number_of_obstacles,
                                                number_of_observations=1,
                                                types=["other"]
                                                )
 
-    obsts_dict_array = []
+    obst_dicts_array = []
 
     for obst in obsts:
-        obsts_dict_array.append(obst.as_dict())
+        obst_dicts_array.append(obst.as_dict())
 
-    obsts_dict = {"obstacles": json.dumps(obsts_dict_array)}
+    message_dict = {"obstacles": obst_dicts_array,
+                    "sensor_latitude": random.uniform(-latitude_random_radius, latitude_random_radius),
+                    "sensor_longitude": random.uniform(-longitude_random_radius, longitude_random_radius)
+                    }
 
-    obsts_json = json.dumps(obsts_dict, indent=4, default=str)
-
-    mqtt_turmu.publish_obstacles(client, topic, obsts_json)
-
-
+    client.publish(topic, json.dumps(message_dict, indent=4))
 
     client.disconnect()
+    print("publish_done")
 
 
 if __name__ == "__main__":
-    run(number_of_obstacles=2)
+    run(number_of_obstacles=2,
+        latitude_random_radius=10,
+        longitude_random_radius=10,
+        )

@@ -19,7 +19,7 @@ if __name__ == "__main__":
     for item in obstacles_list:
         item.print()
 
-    current_map = mo.Map(mapped_obstacles=obstacles_list, observ_threshold_for_new_obstacle_addition=1)
+    current_map = mo.Map(obstacles_to_map=obstacles_list, observ_threshold_for_new_obstacle_addition=1)
 
     new_observation = mo.generate_default_obstacles_list(number_of_obstacles=3)
 
@@ -43,6 +43,4 @@ if __name__ == "__main__":
         """
         pass
     else:
-        current_map.update_map(paired_mapped_obstacle_idx,
-                               paired_new_obstacle_idx,
-                               new_observation)
+        current_map.update_map(paired_mapped_obstacle_idx, paired_new_obstacle_idx, new_observation, dont_pair)

@@ -8,9 +8,10 @@ import json
 import mqtt_turmu
 
 # set up sigma parameters for rbf calculation
-sigmas = [1,  # sigma_lat
-          1,  # sigma_long
-          1,  # sigma_speed
+# higher sigma means more tolerance
+sigmas = [0.5,  # sigma_latitude
+          0.5,  # sigma_longitude
+          2,  # sigma_speed
           1,  # sigma_width
           1,  # sigma_length
           ]
@@ -96,6 +97,12 @@ class Obstacle:
                   "timestamp": latest_timestamp}
         """
 
+        # check if timestamp yields string or datetime.datetime
+        if isinstance(self.latest_timestamp, str):
+            timestamp_in_dict = self.latest_timestamp
+        else:
+            timestamp_in_dict = self.latest_timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
         return {"obstacleId": self.obstacle_id,
                 "type": self.obstacle_type,
                 "latitude": self.lat,
@@ -104,7 +111,7 @@ class Obstacle:
                 "width": self.width,
                 "length": self.length,
                 "observations": self.number_of_observations,
-                "timestamp": self.latest_timestamp,
+                "timestamp": timestamp_in_dict
                 }
 
     def as_json(self):
@@ -227,18 +234,23 @@ def obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_as_dict=None):
 
 
 class Map:
-    def __init__(self, mapped_obstacles=None, observ_threshold_for_new_obstacle_addition=0):
+    def __init__(self, obstacles_to_map=None, observ_threshold_for_new_obstacle_addition=0):
         """
         Class for mapped obstacles
 
-        :param mapped_obstacles: List of Obstacle instances
+        :param obstacles_to_map: List of Obstacle instances to map
         :param observ_threshold_for_new_obstacle_addition: threshold value, denoting
                                                  how many observations shall a new value be added
         """
-        if mapped_obstacles is None:
-            mapped_obstacles = []
-        self.mapped_obstacles = mapped_obstacles
-        self.number_of_mapped_obstacles = len(mapped_obstacles) if self.mapped_obstacles is not None else 0
+        if obstacles_to_map is None:
+            obstacles_to_map = []
+
+        # initialize indexes
+        for i, obstacle in enumerate(obstacles_to_map):
+            obstacle.obstacle_id = i
+
+        self.mapped_obstacles = obstacles_to_map
+        self.number_of_mapped_obstacles = len(obstacles_to_map) if self.mapped_obstacles is not None else 0
         self.observ_threshold_for_new_obstacle_addition = observ_threshold_for_new_obstacle_addition
 
     def update_map(self,
@@ -262,8 +274,10 @@ class Map:
                 mapped_means = self.mapped_obstacles[i].strip_params()
                 n = self.mapped_obstacles[i].number_of_observations
 
-                # get values from newly observed paired obstacle
+                # get pairing index
                 paired_newly_observed_obstacle_index = paired_newly_observed_obstacle_indices[i]
+
+                # get values from newly observed paired obstacle
                 new_vals = newly_observed_obstacles[paired_newly_observed_obstacle_index].strip_params()
 
                 # calculate new means
@@ -285,6 +299,9 @@ class Map:
                 # update latest_timestamp of matched object
                 self.mapped_obstacles[i].latest_timestamp = \
                     newly_observed_obstacles[paired_newly_observed_obstacle_index].latest_timestamp
+
+            # update number of mapped objects
+            self.number_of_mapped_obstacles = len(self.mapped_obstacles)
 
     def subset_in_observed_area(self, sensor_location=None, observable_area_radius=50):
         """
@@ -329,8 +346,20 @@ class Map:
 
         return highest_id
 
+    def publish_map(self, client, topic):
+        """
+        publishes the obstacles mapped in the object to the given topic
+        :param client: MQTT client
+        :param topic: topic to publish on
+        """
 
-def add_obstacles_above_threshold(candidate_map: Map, actual_map: Map):
+        mqtt_turmu.publish_obstacles(client=client,
+                                     topic=topic,
+                                     obstacles=self.mapped_obstacles,
+                                     )
+
+
+def add_obstacles_above_mapping_threshold(candidate_map: Map, actual_map: Map):
     """
     Method to include obstacles from candidate map to actual map
         1. Check if obstacle has been observed more times, then actual map threshold
@@ -347,25 +376,35 @@ def add_obstacles_above_threshold(candidate_map: Map, actual_map: Map):
             candidate_map.mapped_obstacles.remove(obstacle)
 
 
-def pair_obstacles(current_map, newly_observed_obstacles):
+def pair_obstacles(current_map, newly_observed_obstacles, threshold=0.8):   # TODO optimize threshold value
     """
     Finds the best pairings and returns indices of newly found obstacles
 
+    :param threshold: Threshold value for bad pairings
     :param current_map: instance of map_obstacle.Map class
     :param newly_observed_obstacles: array of instances of map_obstacle.Obstacle class
-    :return: 2 values:
+    :return: 3 values:
                 1. paired_mapped_obstacle_indices (Ndarray): indices
                 2. paired_new_obstacle_indices (Ndarray): indices of paired obstacle in newly_observed_obstacles
     """
 
     # calculate cost matrix between the newly observed and the mapped obstacles
-    costs = calculate_cost_of_observation(current_map=current_map,
-                                          candidates=newly_observed_obstacles,
-                                          threshold=0.8,  # TODO optimize threshold value
-                                          )
+    costs, dont_pair = calculate_cost_of_observation(current_map=current_map,
+                                                     candidates=newly_observed_obstacles,
+                                                     threshold=threshold,
+                                                     )
 
     # find pairings
-    paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices = magyar(costs)
+    paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices = magyar(costs, maximize=True)
+
+    # remove pairings below threshold
+    dont_pair_index = []
+    for i, pairing in enumerate(zip(paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices)):
+        if pairing in dont_pair:
+            dont_pair_index.append(i)
+
+    paired_mapped_obstacle_indices = np.delete(paired_mapped_obstacle_indices, dont_pair_index)
+    paired_newly_observed_obstacle_indices = np.delete(paired_newly_observed_obstacle_indices, dont_pair_index)
 
     return paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices
 
@@ -401,25 +440,28 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     :param threshold: threshold value to avoid false pairings
     :param current_map: instance of map_obstacle.Map
     :param candidates: array of instances of map_obstacle.Obstacle class
-    :return: cost matrix used for the magyar algorithm
+    :return: 2 values
+                1. cost matrix used for the magyar algorithm
+                2. forbidden pairing index-couplings
     """
+    # initialize dont_pair index-couplings
+    dont_pair = []
     # multiply obstacle threshold to all dimensions of an obstacle
-    cost_threshold = threshold * 5
+    cost_threshold = float(3 + threshold * 2)
 
     # shape of cost matrix: mapped objs(rows) x candidate objs(columns)
     cost = np.empty((len(current_map.mapped_obstacles), len(candidates)))
 
     for i, map_point in enumerate(current_map.mapped_obstacles):
         for j, candidate_point in enumerate(candidates):
-            # negative sign used because of cost minimization in magyar algorithm
-            # while regular Gaussian rbf maximizes at perfect matches
-            cost[i][j] = -calculate_rbf(candidate_point, map_point)
+            cost[i][j] = calculate_rbf(candidate_point, map_point)
 
-    # check if
-    # TODO - neg(cost thresh)??
-    cost[cost > cost_threshold] = 0
+            # check if pairing cost is strong enough to be over the threshold
+            if cost[i][j] >= cost_threshold:
+                dont_pair.append([i, j])
+                cost[i][j] = 0
 
-    return cost
+    return cost, dont_pair
 
 
 def turmu_offline_mode_publish(client, topic, number_of_obstacles=3, types=None, like=None):
@@ -457,6 +499,7 @@ class Egovehicle:
     def get_published_info(self, client, topic):
         """
         Method that listens to the MQTT broker for egovehicle payloads
+        Not used after 30.06.2022.
 
         :param client: MQTT client
         :param topic: egovehicle topic
@@ -474,6 +517,7 @@ class Egovehicle:
     def get_sensor_location_at_measurement(self, obstacle: Obstacle):
         """
         Get the sensor location at (or closest to the time of the measurement)
+        Not used after 30.06.2022.
 
         :param obstacle: mo.Obstacle, to which the closest measurement is sought (in time)
         :return: sensor location at the closest measurement

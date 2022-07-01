@@ -52,7 +52,12 @@ def publish_obstacle(client, topic, obstacle):
 
 
 def publish_obstacles(client, topic, obstacles):
-    msg = json.dumps(obstacles)
+    obstacles_dict_array = []
+    for obst in obstacles:
+        obstacles_dict_array.append(obst.as_dict())
+
+    obstacles_dict = {"obstacles": obstacles_dict_array}
+    msg = json.dumps(obstacles_dict, indent=4, default=str)
     result = client.publish(topic, msg)
     status = result[0]
     if status == 1:
@@ -75,6 +80,11 @@ def subscribe(client: mqtt_client, topic, obstacles=None, timestamps=None, senso
                 for obstacle_dict in message_dict["obstacles"]:
                     obstacle_ = mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_dict)
                     obstacles.append(obstacle_)
+                sensor_locations.append([message_dict["sensor_latitude"],
+                                         message_dict["sensor_longitude"]
+                                         ]
+                                        )
+                timestamps.append(message_dict["obstacles"][0]["timestamp"])
 
             if "obstacleId" in message_dict:
                 # create obstacle from read data if the message is for an observed obstacle
@@ -87,7 +97,10 @@ def subscribe(client: mqtt_client, topic, obstacles=None, timestamps=None, senso
             elif "vehicleId" in message_dict:
                 # read sensor location and timestamp from ego-vehicle if the message isf for and ego-vehicle
                 timestamps.append(message_dict["timestamp"])
-                sensor_locations.append([message_dict["latitude"], message_dict["longitude"]])
+                sensor_locations.append([message_dict["latitude"],
+                                         message_dict["longitude"]
+                                         ]
+                                        )
 
         except Exception as e:
             print(e)
