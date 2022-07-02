@@ -5,10 +5,6 @@ import mqtt_turmu
 
 if __name__ == "__main__":
 
-    # Setup local/live mode
-    local_mode = False
-    input_dir = None  # currently takes csv with lines as obstacles
-
     # Setup variables
     # parameters for Tecnalia MQTT broker
     broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path = \
