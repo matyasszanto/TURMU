@@ -56,6 +56,7 @@ class Obstacle:
         self.number_of_observations = number_of_observations
         self.first_timestamp = first_timestamp
         self.latest_timestamp = latest_timestamp
+        self.penalty_points: int = 0
 
     def print(self):
         """
@@ -234,20 +235,22 @@ def obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_as_dict=None):
 
 
 class Map:
-    def __init__(self, obstacles_to_map=None, observ_threshold_for_new_obstacle_addition=0):
+    def __init__(self, obstacles_to_map=None, observ_threshold_for_new_obstacle_addition=0, subset=False):
         """
         Class for mapped obstacles
 
         :param obstacles_to_map: List of Obstacle instances to map
         :param observ_threshold_for_new_obstacle_addition: threshold value, denoting
-                                                 how many observations shall a new value be added
+                                                           how many observations shall a new value be added
+        :param subset: Flag to show if only map subset is created at this step - obstacle ids won't be reinitialized
         """
         if obstacles_to_map is None:
             obstacles_to_map = []
 
-        # initialize indexes
-        for i, obstacle in enumerate(obstacles_to_map):
-            obstacle.obstacle_id = i
+        # initialize indexes if necessary
+        if not subset:
+            for i, obstacle in enumerate(obstacles_to_map):
+                obstacle.obstacle_id = i
 
         self.mapped_obstacles = obstacles_to_map
         self.number_of_mapped_obstacles = len(obstacles_to_map) if self.mapped_obstacles is not None else 0
@@ -265,43 +268,40 @@ class Map:
         :param paired_newly_observed_obstacle_indices: output of find_new_obstacles function
         :param newly_observed_obstacles: array of instances of map_obstacle.Obstacle class
         """
-        for i, mapped_obstacle_mean in enumerate(self.mapped_obstacles):
+        for i, paired_mapped_index in enumerate(paired_mapped_obstacles_indices):
 
-            # check if position update is necessary
-            if i in paired_mapped_obstacles_indices:
+            # get means and no_observations from paired mapped obstacle
+            mapped_means = self.mapped_obstacles[paired_mapped_index].strip_params()
+            n = self.mapped_obstacles[paired_mapped_index].number_of_observations
 
-                # get means and no_observations from paired mapped obstacle
-                mapped_means = self.mapped_obstacles[i].strip_params()
-                n = self.mapped_obstacles[i].number_of_observations
+            # get pairing index
+            paired_newly_observed_obstacle_index = paired_newly_observed_obstacle_indices[i]
 
-                # get pairing index
-                paired_newly_observed_obstacle_index = paired_newly_observed_obstacle_indices[i]
+            # get values from newly observed paired obstacle
+            new_vals = newly_observed_obstacles[paired_newly_observed_obstacle_index].strip_params()
 
-                # get values from newly observed paired obstacle
-                new_vals = newly_observed_obstacles[paired_newly_observed_obstacle_index].strip_params()
+            # calculate new means
+            updated_means = np.empty_like(mapped_means)
+            for j, (old_val, new_val) in enumerate(zip(mapped_means, new_vals)):
+                weighted_mean = old_val * n
+                updated_means[j] = (weighted_mean + new_val) / (n + 1)
 
-                # calculate new means
-                updated_means = np.empty_like(mapped_means)
-                for j, (old_val, new_val) in enumerate(zip(mapped_means, new_vals)):
-                    weighted_mean = old_val * n
-                    updated_means[j] = (weighted_mean + new_val) / (n + 1)
+            # update mapped obstacle means in map class
+            self.mapped_obstacles[paired_mapped_index].lat = updated_means[0]
+            self.mapped_obstacles[paired_mapped_index].long = updated_means[1]
+            self.mapped_obstacles[paired_mapped_index].speed = updated_means[2]
+            self.mapped_obstacles[paired_mapped_index].width = updated_means[3]
+            self.mapped_obstacles[paired_mapped_index].length = updated_means[4]
 
-                # update mapped obstacle means in map class
-                self.mapped_obstacles[i].lat = updated_means[0]
-                self.mapped_obstacles[i].long = updated_means[1]
-                self.mapped_obstacles[i].speed = updated_means[2]
-                self.mapped_obstacles[i].width = updated_means[3]
-                self.mapped_obstacles[i].length = updated_means[4]
+            # increase number of observations for obstacle
+            self.mapped_obstacles[paired_mapped_index].number_of_observations += 1
 
-                # increase number of observations for obstacle
-                self.mapped_obstacles[i].number_of_observations += 1
+            # update latest_timestamp of matched object
+            self.mapped_obstacles[paired_mapped_index].latest_timestamp = \
+                newly_observed_obstacles[paired_newly_observed_obstacle_index].latest_timestamp
 
-                # update latest_timestamp of matched object
-                self.mapped_obstacles[i].latest_timestamp = \
-                    newly_observed_obstacles[paired_newly_observed_obstacle_index].latest_timestamp
-
-            # update number of mapped objects
-            self.number_of_mapped_obstacles = len(self.mapped_obstacles)
+        # update number of mapped objects
+        self.number_of_mapped_obstacles = len(self.mapped_obstacles)
 
     def subset_in_observed_area(self, sensor_location=None, observable_area_radius=50):
         """
@@ -328,7 +328,10 @@ class Map:
             if distance < observable_area_radius:
                 obstacles_subset.append(obstacle)
 
-        map_subset = Map(obstacles_subset, self.observ_threshold_for_new_obstacle_addition)
+        map_subset = Map(obstacles_to_map=obstacles_subset,
+                         observ_threshold_for_new_obstacle_addition=self.observ_threshold_for_new_obstacle_addition,
+                         subset=True,
+                         )
 
         return map_subset
 
@@ -359,6 +362,53 @@ class Map:
                                      )
 
 
+def demote_obstacle(actual_map_observable_subset: Map,
+                    actual_map: Map,
+                    paired_mapped_obstacles: list,
+                    candidate_map: Map,
+                    candidate_map_observable_subset: Map,
+                    penalty_points_for_demotion: int,
+                    ):
+
+    """
+    Demote obstacles that have not been observed for the last "number of missed observations to demote" times.
+
+    :param actual_map_observable_subset: Map object of currently observed actual map
+    :param actual_map: Map object of actual map
+    :param paired_mapped_obstacles: Output vector of indices of magyar algorithm
+    :param candidate_map: Map object of candidate map
+    :param candidate_map_observable_subset: Map object of currently observed candidate map
+    :param penalty_points_for_demotion: Threshold value for obstacle demotion
+    """
+    # find obstacles that should have been observed
+    should_be_observed = np.array(actual_map_observable_subset.mapped_obstacles)
+
+    # find obstacles that were actually observed
+    are_observed = np.array(actual_map_observable_subset.mapped_obstacles)[paired_mapped_obstacles]
+
+    # find missing elements
+    mask = np.isin(should_be_observed, are_observed)
+
+    # iterate through missing elements
+    for not_observed_obstacle in should_be_observed[~mask]:
+
+        # increment times missed
+        not_observed_obstacle.penalty_points += 1
+
+        # demote to candidate map, if times missed is above threshold
+        if not_observed_obstacle.penalty_points > penalty_points_for_demotion:
+            # reset number of observation below map addition threshold
+            not_observed_obstacle.number_of_observations = actual_map.observ_threshold_for_new_obstacle_addition - 1
+
+            # remove obstacle from actual map and its observed version
+            actual_map.mapped_obstacles.remove(not_observed_obstacle)
+            actual_map_observable_subset.mapped_obstacles.remove(not_observed_obstacle)
+
+            # add obstacle to candidate map and its observed version
+            candidate_map.mapped_obstacles.append(not_observed_obstacle)
+            candidate_map_observable_subset.mapped_obstacles.append(not_observed_obstacle)
+
+
 def add_obstacles_above_mapping_threshold(candidate_map: Map, actual_map: Map):
     """
     Method to include obstacles from candidate map to actual map
@@ -372,6 +422,7 @@ def add_obstacles_above_mapping_threshold(candidate_map: Map, actual_map: Map):
 
     for obstacle in candidate_map.mapped_obstacles:
         if obstacle.number_of_observations > actual_map.observ_threshold_for_new_obstacle_addition:
+            obstacle.penalty_points = 0
             actual_map.mapped_obstacles.append(obstacle)
             candidate_map.mapped_obstacles.remove(obstacle)
 
@@ -400,7 +451,7 @@ def pair_obstacles(current_map, newly_observed_obstacles, threshold=0.8):   # TO
     # remove pairings below threshold
     dont_pair_index = []
     for i, pairing in enumerate(zip(paired_mapped_obstacle_indices, paired_newly_observed_obstacle_indices)):
-        if pairing in dont_pair:
+        if list(pairing) in dont_pair:
             dont_pair_index.append(i)
 
     paired_mapped_obstacle_indices = np.delete(paired_mapped_obstacle_indices, dont_pair_index)
