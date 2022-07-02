@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # Map initialization and mapping threshold
     map_init_observations = 10
-    mapping_threshold = 5
+    mapping_promotion_threshold = 5
     penalty_points_for_demotion = 3
     actual_map = mo.Map()
     candidate_map = mo.Map()
@@ -84,7 +84,7 @@ if __name__ == "__main__":
             ego_vehicle = mo.Egovehicle()
 
             # initialize empty candidate map
-            candidate_map = mo.Map(obstacles_to_map=[], observ_threshold_for_new_obstacle_addition=0)
+            candidate_map = mo.Map(obstacles_to_map=[], promotion_threshold=0)
             # listen to MQTT
             while len(obstacles) == 0:
                 client.loop(0)
@@ -98,8 +98,7 @@ if __name__ == "__main__":
             # initialize actual map
             for obstacle in obstacles:
                 obstacle.number_of_observations = map_init_observations
-            actual_map = mo.Map(obstacles_to_map=obstacles,
-                                observ_threshold_for_new_obstacle_addition=mapping_threshold)
+            actual_map = mo.Map(obstacles_to_map=obstacles, promotion_threshold=mapping_promotion_threshold)
 
             state = "idle"
 
@@ -195,7 +194,7 @@ if __name__ == "__main__":
                 new_observation = []
 
             # include those obstacles from the candidate map, which have reached the threshold, to the actual map
-            mo.add_obstacles_above_mapping_threshold(candidate_map=candidate_map, actual_map=actual_map)
+            mo.promote_obstacles(candidate_map=candidate_map, actual_map=actual_map)
 
             # set next state - publish obstacles, if new obstacle has been added to actual_map
             #                  idle, if actual map hasn't changed

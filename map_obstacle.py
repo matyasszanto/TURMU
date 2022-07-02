@@ -235,12 +235,12 @@ def obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_as_dict=None):
 
 
 class Map:
-    def __init__(self, obstacles_to_map=None, observ_threshold_for_new_obstacle_addition=0, subset=False):
+    def __init__(self, obstacles_to_map=None, promotion_threshold=0, subset=False):
         """
         Class for mapped obstacles
 
         :param obstacles_to_map: List of Obstacle instances to map
-        :param observ_threshold_for_new_obstacle_addition: threshold value, denoting
+        :param promotion_threshold: threshold value, denoting
                                                            how many observations shall a new value be added
         :param subset: Flag to show if only map subset is created at this step - obstacle ids won't be reinitialized
         """
@@ -254,7 +254,7 @@ class Map:
 
         self.mapped_obstacles = obstacles_to_map
         self.number_of_mapped_obstacles = len(obstacles_to_map) if self.mapped_obstacles is not None else 0
-        self.observ_threshold_for_new_obstacle_addition = observ_threshold_for_new_obstacle_addition
+        self.promotion_threshold = promotion_threshold
 
     def update_map(self,
                    paired_mapped_obstacles_indices,
@@ -329,9 +329,7 @@ class Map:
                 obstacles_subset.append(obstacle)
 
         map_subset = Map(obstacles_to_map=obstacles_subset,
-                         observ_threshold_for_new_obstacle_addition=self.observ_threshold_for_new_obstacle_addition,
-                         subset=True,
-                         )
+                         promotion_threshold=self.promotion_threshold, subset=True)
 
         return map_subset
 
@@ -398,7 +396,7 @@ def demote_obstacle(actual_map_observable_subset: Map,
         # demote to candidate map, if times missed is above threshold
         if not_observed_obstacle.penalty_points > penalty_points_for_demotion:
             # reset number of observation below map addition threshold
-            not_observed_obstacle.number_of_observations = actual_map.observ_threshold_for_new_obstacle_addition - 1
+            not_observed_obstacle.number_of_observations = actual_map.promotion_threshold - 1
 
             # remove obstacle from actual map and its observed version
             actual_map.mapped_obstacles.remove(not_observed_obstacle)
@@ -409,7 +407,7 @@ def demote_obstacle(actual_map_observable_subset: Map,
             candidate_map_observable_subset.mapped_obstacles.append(not_observed_obstacle)
 
 
-def add_obstacles_above_mapping_threshold(candidate_map: Map, actual_map: Map):
+def promote_obstacles(candidate_map: Map, actual_map: Map):
     """
     Method to include obstacles from candidate map to actual map
         1. Check if obstacle has been observed more times, then actual map threshold
@@ -421,7 +419,7 @@ def add_obstacles_above_mapping_threshold(candidate_map: Map, actual_map: Map):
     """
 
     for obstacle in candidate_map.mapped_obstacles:
-        if obstacle.number_of_observations > actual_map.observ_threshold_for_new_obstacle_addition:
+        if obstacle.number_of_observations > actual_map.promotion_threshold:
             obstacle.penalty_points = 0
             actual_map.mapped_obstacles.append(obstacle)
             candidate_map.mapped_obstacles.remove(obstacle)

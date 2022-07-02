@@ -19,7 +19,7 @@ if __name__ == "__main__":
     for item in obstacles_list:
         item.print()
 
-    current_map = mo.Map(obstacles_to_map=obstacles_list, observ_threshold_for_new_obstacle_addition=1)
+    current_map = mo.Map(obstacles_to_map=obstacles_list, promotion_threshold=1)
 
     new_observation = mo.generate_default_obstacles_list(number_of_obstacles=3)
 
