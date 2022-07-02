@@ -5,8 +5,6 @@ import mqtt_turmu
 
 if __name__ == "__main__":
 
-    # TODO test lower number of new_observations than actual_map obstacles
-
     # Setup local/live mode
     local_mode = False
     input_dir = None  # currently takes csv with lines as obstacles
