@@ -52,6 +52,7 @@ if __name__ == "__main__":
     # Map initialization and mapping threshold
     map_init_observations = 10
     mapping_threshold = 5
+    penalty_points_for_demotion = 3
     actual_map = mo.Map()
     candidate_map = mo.Map()
 
@@ -109,7 +110,7 @@ if __name__ == "__main__":
             state = "idle"
 
         # idle state: listen to the MQTT topic, and obtain new broadcast observation (i.e., obstacles)
-        #             and sensor locaitions as well as separate timestamps to the ego_vehicle instant
+        #             and sensor locations as well as separate timestamps to the ego_vehicle instant
         elif state == "idle":
             # listen to MQTT
             while len(new_observation) == 0:
@@ -126,7 +127,9 @@ if __name__ == "__main__":
         # update_map state: include obstacles in candidate map, and if they cross the threshold,
         #                   include them in the actual map, too
         elif state == "update_map":
-            print(f"Number of new observations before actual map update: {len(new_observation)}")
+            # for state selector choice
+            actual_obstacles_before_update = len(actual_map.mapped_obstacles)
+
             # subset of maps that can be observed
             actual_map_observed = actual_map.subset_in_observed_area(
                 sensor_location=ego_vehicle.sensor_locations[-1],
@@ -150,12 +153,18 @@ if __name__ == "__main__":
                                   newly_observed_obstacles=new_observation,
                                   )
 
+            # penalize not observed obstacles and demote them if necessary
+            mo.demote_obstacle(actual_map_observable_subset=actual_map_observed, actual_map=actual_map,
+                               paired_mapped_obstacles=paired_actual_mapped_obstacle_indices,
+                               candidate_map=candidate_map, candidate_map_observable_subset=candidate_map_observed,
+                               penalty_points_for_demotion=penalty_points_for_demotion,
+                               )
+
             # remove paired obstacles from the list of new observation
             paired_new_obstacle_indices.sort()
             for i, index in enumerate(paired_new_obstacle_indices):
                 new_observation.pop(index - i)
 
-            print(f"Number of new observations before candidate map update: {len(new_observation)}")
             # if there's anything remaining in new_observations not paired up with the actual map
             if len(new_observation) != 0:
 
@@ -177,26 +186,19 @@ if __name__ == "__main__":
                 for i, index in enumerate(paired_new_obstacle_indices):
                     new_observation.pop(index - i)
 
-            print(f"Number of new observations after candidate map update: {len(new_observation)}")
             # add anything that remains to the candidate map
             if len(new_observation) != 0:
                 for new_obstacle in new_observation:
 
                     # set unique obstacle_id
                     new_obstacle.obstacle_id = max([actual_map.highest_id(), candidate_map.highest_id()]) + 1
-                    print(f"max ID is: {new_obstacle.obstacle_id}")
+                    print(f"new ID is: {new_obstacle.obstacle_id}")
 
                     # add to candidate map
                     candidate_map.mapped_obstacles.append(new_obstacle)
 
                 # empty new_observation array
                 new_observation = []
-            print("reached end of map update")
-            print()
-            # for state selector choice
-            actual_obstacles_before_update = len(actual_map.mapped_obstacles)
-
-            # TODO decrement counter for obstacles that should be observed but are not
 
             # include those obstacles from the candidate map, which have reached the threshold, to the actual map
             mo.add_obstacles_above_mapping_threshold(candidate_map=candidate_map, actual_map=actual_map)
