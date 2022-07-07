@@ -264,8 +264,8 @@ class Map:
         """
         Method for updating means and timestamps of mapped obstacles with new observation
 
-        :param paired_mapped_obstacles_indices: output of find_new_obstacles function
-        :param paired_newly_observed_obstacle_indices: output of find_new_obstacles function
+        :param paired_mapped_obstacles_indices: output of pair_obstacles function
+        :param paired_newly_observed_obstacle_indices: output of pair_obstacles function
         :param newly_observed_obstacles: array of instances of map_obstacle.Obstacle class
         """
         for i, paired_mapped_index in enumerate(paired_mapped_obstacles_indices):
