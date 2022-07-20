@@ -80,8 +80,8 @@ def subscribe(client: mqtt_client, topic, obstacles=None, timestamps=None, senso
                 for obstacle_dict in message_dict["obstacles"]:
                     obstacle_ = mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_dict)
                     obstacles.append(obstacle_)
-                sensor_locations.append([message_dict["sensor_latitude"],
-                                         message_dict["sensor_longitude"]
+                sensor_locations.append([float(message_dict["sensor_latitude"]),
+                                         float(message_dict["sensor_longitude"])
                                          ]
                                         )
                 timestamps.append(message_dict["obstacles"][0]["timestamp"])
@@ -95,7 +95,7 @@ def subscribe(client: mqtt_client, topic, obstacles=None, timestamps=None, senso
                 obstacle_ = mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(message_dict)
                 obstacles.append(obstacle_)
             elif "vehicleId" in message_dict:
-                # read sensor location and timestamp from ego-vehicle if the message isf for and ego-vehicle
+                # read sensor location and timestamp from ego-vehicle if the message is for and ego-vehicle
                 timestamps.append(message_dict["timestamp"])
                 sensor_locations.append([message_dict["latitude"],
                                          message_dict["longitude"]
