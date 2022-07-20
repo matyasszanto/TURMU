@@ -13,6 +13,7 @@ def run(like: [mo.Obstacle] = None, number_of_obstacles=3, latitude_random_radiu
         mqtt_turmu.load_default_params()
 
     topic = "testtopic/matyas"
+    topic = "iotac/Twizy-1/obstacles"
 
     client = mqtt_turmu.connect_mqtt(broker,
                                      port,
@@ -26,7 +27,8 @@ def run(like: [mo.Obstacle] = None, number_of_obstacles=3, latitude_random_radiu
 
     obsts = mo.generate_default_obstacles_list(number_of_obstacles=number_of_obstacles,
                                                number_of_observations=1,
-                                               types=["other"]
+                                               types=["2"],
+                                               uniform=True,
                                                )
 
     obst_dicts_array = []
