@@ -12,10 +12,10 @@ if __name__ == "__main__":
 
     # set up topic names here
     # for testing use "testtopic/matyas" to listen to
-    topic_listen = "testtopic/matyas"
+    topic_listen = "iotac/Twizy-1/obstacles"
 
     # for testing use "testtopic/planner"
-    topic_publish = "testtopic/planner"
+    topic_publish = "iotac/planner"
 
     # for testing use "testtopic/egovehicle"
     topic_egovehicle = "testtopic/egovehicle"
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     actual_map = mo.Map()
     candidate_map = mo.Map()
 
-    # Ego vechicle initialization
+    # Ego-vehicle initialization
     ego_vehicle = None
 
     # debug
@@ -84,7 +84,9 @@ if __name__ == "__main__":
             ego_vehicle = mo.Egovehicle()
 
             # initialize empty candidate map
-            candidate_map = mo.Map(obstacles_to_map=[], promotion_threshold=0)
+            candidate_map = mo.Map(obstacles_to_map=[],
+                                   promotion_threshold=0,
+                                   )
             # listen to MQTT
             while len(obstacles) == 0:
                 client.loop(0)
@@ -137,7 +139,7 @@ if __name__ == "__main__":
             paired_actual_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
                 current_map=actual_map_observed,
                 newly_observed_obstacles=new_observation,
-                threshold=0.0,
+                threshold=1.0,
             )
 
             # update paired mapped obstacles
