@@ -21,8 +21,8 @@ class Obstacle:
     def __init__(self,
                  obstacle_id=0,
                  obstacle_type="empty",
-                 lat=0,
-                 long=0,
+                 lat=0.0,
+                 long=0.0,
                  speed=0.0,
                  width=0.0,
                  length=0.0,
@@ -34,7 +34,7 @@ class Obstacle:
         Obstacle class
 
         :param obstacle_id: ID number of obstacle
-        :param obstacle_type: type of obstacle: vehicle, pedestrian, not_specified
+        :param obstacle_type: type of obstacle: 0 - vehicle, 1 - pedestrian, 2 - not_specified
         :param lat: lateral coordinates of obstacle
         :param long: longitudinal coordinates of obstacle
         :param speed: speed of obstacle
@@ -47,7 +47,7 @@ class Obstacle:
 
         # parameters
         self.obstacle_id = obstacle_id
-        self.obstacle_type = obstacle_type  # vehicle, pedestrian, N/S
+        self.obstacle_type = obstacle_type  # 0 - vehicle, 1 - pedestrian, 2 - N/S
         self.lat = lat
         self.long = long
         self.speed = speed
@@ -102,7 +102,8 @@ class Obstacle:
         if isinstance(self.latest_timestamp, str):
             timestamp_in_dict = self.latest_timestamp
         else:
-            timestamp_in_dict = self.latest_timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            # timestamp_in_dict = self.latest_timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            timestamp_in_dict = self.latest_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         return {"obstacleId": self.obstacle_id,
                 "type": self.obstacle_type,
@@ -136,15 +137,17 @@ def write_obstacle_to_output(obstacle: Obstacle):
 def generate_default_obstacles_list(number_of_obstacles=3,
                                     types=None,
                                     number_of_observations=1,
-                                    like: [Obstacle] = None
+                                    like: [Obstacle] = None,
+                                    uniform=False,
                                     ):
     """
     Generates a list of Obstacle instances of length number_of_obstacles with random numeric parameters for
     long and lat, and with fixed values for types
 
+    :param uniform: to generate identical obstacles
     :param number_of_obstacles: number of obstacles to be generated
                                 if "like" is not None, this parameter is not used.
-    :param types: list of types from ["vehicle", "pedestrian", "other"]
+    :param types: list of types from ["0", "1", "2"] as ["vehicle", "pedestrian", "other"]
                   if "like" is not None, this parameter is not used.
     :param number_of_observations: number of observations parameter of generated obstacles
                                    if "like" is not None, this parameter is not used.
@@ -153,7 +156,8 @@ def generate_default_obstacles_list(number_of_obstacles=3,
     """
 
     # get current time as formatted string
-    current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    # current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     number_of_obstacles = number_of_obstacles if like is None else len(like)
 
@@ -163,30 +167,40 @@ def generate_default_obstacles_list(number_of_obstacles=3,
     if like is None:
         # check types var
         if not isinstance(types, list) and not isinstance(types[0], str):
-            types = ["vehicle", "pedestrian", "other"]
+            # types = ["vehicle", "pedestrian", "other"]
+            types = ["0", "1", "2"]
         else:
             for type_ in types:
-                if type_ not in ["vehicle", "pedestrian", "other"]:
-                    types = ["vehicle", "pedestrian", "other"]
+                # if type_ not in ["vehicle", "pedestrian", "other"]:
+                if type_ not in ["0", "1", "2"]:
+                    # types = ["vehicle", "pedestrian", "other"]
+                    types = ["0", "1", "2"]
                     break
 
         obstacle_types = (np.array(types))
         for i in range(number_of_obstacles):
             current_type = np.random.choice(obstacle_types)
-            if current_type == "vehicle":
+            if current_type == "0":     # vehicle
                 current_width = 2
                 current_length = 3.5
-            elif current_type == "pedestrian":
+            elif current_type == "1":   # pedestrian
                 current_width = 0.4
                 current_length = 0.4
             else:
                 current_width = 1
                 current_length = 1
 
+            if uniform:
+                lat = 0
+                long = 0
+            else:
+                lat = np.random.uniform(-15, 15)
+                long = np.random.uniform(-5, 5)
+
             list_of_obstacles[i] = Obstacle(obstacle_id=i,
                                             obstacle_type=current_type,
-                                            lat=np.random.uniform(-15, 15),
-                                            long=np.random.uniform(-5, 5),
+                                            lat=lat,
+                                            long=long,
                                             speed=0,
                                             width=current_width,
                                             length=current_length,
@@ -214,21 +228,28 @@ def generate_default_obstacles_list(number_of_obstacles=3,
 
 
 def obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_as_dict=None):
+    """
+    Creates an obstacle from an MQTT "obstacles" payload
+    :param obstacle_as_dict: a singular obstacle from the "obstacles" payload
+    :return: Obstacle instance
+    """
     if obstacle_as_dict is None:
         obstacle_as_dict = {}
     generated_obstacle = Obstacle(obstacle_id=0,
-                                  obstacle_type="other",
-                                  lat=obstacle_as_dict["latitude"],
-                                  long=obstacle_as_dict["longitude"],
-                                  speed=obstacle_as_dict["speed"],
-                                  width=obstacle_as_dict["width"],
-                                  length=obstacle_as_dict["length"],
+                                  obstacle_type=obstacle_as_dict["type"],
+                                  lat=float(obstacle_as_dict["latitude"]),
+                                  long=float(obstacle_as_dict["longitude"]),
+                                  speed=float(obstacle_as_dict["speed"]),
+                                  width=float(obstacle_as_dict["width"]),
+                                  length=float(obstacle_as_dict["length"]),
                                   number_of_observations=1,
                                   latest_timestamp=datetime.datetime.strptime(obstacle_as_dict["timestamp"],
-                                                                              "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                              # "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                              "%Y-%m-%dT%H:%M:%SZ",
                                                                               ),
                                   first_timestamp=datetime.datetime.strptime(obstacle_as_dict["timestamp"],
-                                                                             "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                             # "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                                             "%Y-%m-%dT%H:%M:%SZ",
                                                                              ),
                                   )
     return generated_obstacle
@@ -496,7 +517,7 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
     # initialize dont_pair index-couplings
     dont_pair = []
     # multiply obstacle threshold to all dimensions of an obstacle
-    cost_threshold = float(3 + threshold * 2)
+    cost_threshold = float(threshold * 5)
 
     # shape of cost matrix: mapped objs(rows) x candidate objs(columns)
     cost = np.empty((len(current_map.mapped_obstacles), len(candidates)))
@@ -506,7 +527,7 @@ def calculate_cost_of_observation(current_map, candidates, threshold=0.8):
             cost[i][j] = calculate_rbf(candidate_point, map_point)
 
             # check if pairing cost is strong enough to be over the threshold
-            if cost[i][j] >= cost_threshold:
+            if cost[i][j] < cost_threshold:
                 dont_pair.append([i, j])
                 cost[i][j] = 0
 
@@ -574,9 +595,13 @@ class Egovehicle:
         dt = np.empty(0)
         for timestamp in self.timestamps:
             measurement_timestamp = datetime.datetime.strptime(obstacle.latest_timestamp,
-                                                               "%Y-%m-%dT%H:%M:%S.%fZ")
+                                                               # "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                               "%Y-%m-%dT%H:%M:%SZ",
+                                                               )
             current_timestamp = datetime.datetime.strptime(timestamp,
-                                                           "%Y-%m-%dT%H:%M:%S.%fZ")
+                                                           # "%Y-%m-%dT%H:%M:%S.%fZ",
+                                                           "%Y-%m-%dT%H:%M:%SZ",
+                                                           )
 
             dt = np.append(dt, abs(measurement_timestamp - current_timestamp))
 
