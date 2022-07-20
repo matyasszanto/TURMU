@@ -25,7 +25,8 @@ def run():
                                      )
 
     msg_dict = {"vehicleId": 0,
-                "timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                # "timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "latitude": 10,
                 "longitude": 10,
                 "speed": 3,
