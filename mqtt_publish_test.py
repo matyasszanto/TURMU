@@ -14,6 +14,7 @@ def run(like: [mo.Obstacle] = None, number_of_obstacles=3, latitude_random_radiu
 
     topic = "testtopic/matyas"
     topic = "iotac/Twizy-1/obstacles"
+    topic = "iotac/VirtualVehicle-1/obstacles"
 
     client = mqtt_turmu.connect_mqtt(broker,
                                      port,
@@ -27,7 +28,7 @@ def run(like: [mo.Obstacle] = None, number_of_obstacles=3, latitude_random_radiu
 
     obsts = mo.generate_default_obstacles_list(number_of_obstacles=number_of_obstacles,
                                                number_of_observations=1,
-                                               types=["2"],
+                                               types=["obstacle"],
                                                uniform=True,
                                                )
 
@@ -48,7 +49,9 @@ def run(like: [mo.Obstacle] = None, number_of_obstacles=3, latitude_random_radiu
 
 
 if __name__ == "__main__":
-    run(number_of_obstacles=2,
-        latitude_random_radius=10,
-        longitude_random_radius=10,
-        )
+    while True:
+        run(number_of_obstacles=1,
+            latitude_random_radius=0,
+            longitude_random_radius=0,
+            )
+        time.sleep(1)
