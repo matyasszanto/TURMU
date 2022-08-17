@@ -34,7 +34,7 @@ class Obstacle:
         Obstacle class
 
         :param obstacle_id: ID number of obstacle
-        :param obstacle_type: type of obstacle: 0 - vehicle, 1 - pedestrian, 2 - not_specified
+        :param obstacle_type: type of obstacle: 0 - empty, 1 - obstacle, 2- vehicle, 3 - pedestrian
         :param lat: lateral coordinates of obstacle
         :param long: longitudinal coordinates of obstacle
         :param speed: speed of obstacle
@@ -47,7 +47,7 @@ class Obstacle:
 
         # parameters
         self.obstacle_id = obstacle_id
-        self.obstacle_type = obstacle_type  # 0 - vehicle, 1 - pedestrian, 2 - N/S
+        self.obstacle_type = obstacle_type  # ["empty", "obstacle", "vehicle", "pedestrian"]
         self.lat = lat
         self.long = long
         self.speed = speed
@@ -57,6 +57,7 @@ class Obstacle:
         self.first_timestamp = first_timestamp
         self.latest_timestamp = latest_timestamp
         self.penalty_points: int = 0
+
 
     def print(self):
         """
@@ -147,7 +148,7 @@ def generate_default_obstacles_list(number_of_obstacles=3,
     :param uniform: to generate identical obstacles
     :param number_of_obstacles: number of obstacles to be generated
                                 if "like" is not None, this parameter is not used.
-    :param types: list of types from ["0", "1", "2"] as ["vehicle", "pedestrian", "other"]
+    :param types: list of types from ["empty", "obstacle", "vehicle", "pedestrian"]
                   if "like" is not None, this parameter is not used.
     :param number_of_observations: number of observations parameter of generated obstacles
                                    if "like" is not None, this parameter is not used.
@@ -167,14 +168,14 @@ def generate_default_obstacles_list(number_of_obstacles=3,
     if like is None:
         # check types var
         if not isinstance(types, list) and not isinstance(types[0], str):
-            # types = ["vehicle", "pedestrian", "other"]
-            types = ["0", "1", "2"]
+            types = ["empty", "obstacle", "vehicle", "pedestrian"]
+            # types = ["0", "1", "2", "3"]
         else:
             for type_ in types:
-                # if type_ not in ["vehicle", "pedestrian", "other"]:
-                if type_ not in ["0", "1", "2"]:
-                    # types = ["vehicle", "pedestrian", "other"]
-                    types = ["0", "1", "2"]
+                # if type_ not in ["empty", "obstacle", "vehicle", "pedestrian"]:
+                if type_ not in ["0", "1", "2", "3"]:
+                    types = ["empty", "obstacle", "vehicle", "pedestrian"]
+                    # types = ["0", "1", "2", "3"]
                     break
 
         obstacle_types = (np.array(types))
