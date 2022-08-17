@@ -1,3 +1,4 @@
+import datetime
 import time
 
 import map_obstacle as mo
@@ -12,7 +13,8 @@ if __name__ == "__main__":
 
     # set up topic names here
     # for testing use "testtopic/matyas" to listen to
-    topic_listen = "iotac/Twizy-1/obstacles"
+    # topic_listen = "iotac/Twizy-1/obstacles"
+    topic_listen = "iotac/VirtualVehicle-1/obstacles"
 
     # for testing use "testtopic/planner"
     topic_publish = "iotac/planner"
@@ -44,11 +46,14 @@ if __name__ == "__main__":
     observable_area_radius = 50
 
     # Map initialization and mapping threshold
-    map_init_observations = 10
+    map_init_observations = 1
     mapping_promotion_threshold = 5
     penalty_points_for_demotion = 3
     actual_map = mo.Map()
     candidate_map = mo.Map()
+
+    # map publication threshold
+    publish_timeout = 5     # seconds
 
     # Ego-vehicle initialization
     ego_vehicle = None
@@ -56,6 +61,8 @@ if __name__ == "__main__":
     # debug
     loop_count: int = 0
     print("start main loop")
+
+    last_publish_time = datetime.datetime.now()
 
     # Main loop
     while True:
@@ -89,7 +96,7 @@ if __name__ == "__main__":
                                    )
             # listen to MQTT
             while len(obstacles) == 0:
-                client.loop(0)
+                client.loop(0.1)
                 mqtt_turmu.subscribe(client=client,
                                      topic=topic_listen,
                                      obstacles=obstacles,
@@ -104,21 +111,30 @@ if __name__ == "__main__":
 
             state = "idle"
 
+            last_publish_time = datetime.datetime.now()
+            continue
+
         # idle state: listen to the MQTT topic, and obtain new broadcast observation (i.e., obstacles)
         #             and sensor locations as well as separate timestamps to the ego_vehicle instant
         elif state == "idle":
             # listen to MQTT
             while len(new_observation) == 0:
-                client.loop(0)
+                client.loop(1)
                 mqtt_turmu.subscribe(client=client,
                                      topic=topic_listen,
                                      obstacles=new_observation,
                                      sensor_locations=ego_vehicle.sensor_locations,
                                      timestamps=ego_vehicle.timestamps,
                                      )
+                since_last_publish = datetime.datetime.now() - last_publish_time
+                if since_last_publish.seconds > publish_timeout:
+                    print("publish timout")
+                    state = "publish_map"
+                    break
+            if state != "publish_map":
+                state = "update_map"
 
-            state = "update_map"
-
+            continue
         # update_map state: include obstacles in candidate map, and if they cross the threshold,
         #                   include them in the actual map, too
         elif state == "update_map":
@@ -204,15 +220,18 @@ if __name__ == "__main__":
                 state = "publish_map"
             else:
                 state = "idle"
-
+            continue
         # publish map state: publish map through mqtt
         elif state == "publish_map":
             # publish mapped objects
             actual_map.publish_map(client=client, topic=topic_publish)
 
+            # restart timer for publish timeout
+            last_publish_time = datetime.datetime.now()
+
             # set next state
             state = "idle"
-
+            continue
         # exit state: exit the program
         # state currently unused
         elif state == "exit":
