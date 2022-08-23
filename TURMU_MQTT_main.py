@@ -43,12 +43,12 @@ if __name__ == "__main__":
     new_observation = []
 
     # parameter of sensor
-    observable_area_radius = 50
+    observable_area_radius = 100
 
     # Map initialization and mapping threshold
     map_init_observations = 1
-    mapping_promotion_threshold = 5
-    penalty_points_for_demotion = 3
+    mapping_promotion_threshold = 80
+    penalty_points_for_demotion = 10
     actual_map = mo.Map()
     candidate_map = mo.Map()
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                                      )
                 since_last_publish = datetime.datetime.now() - last_publish_time
                 if since_last_publish.seconds > publish_timeout:
-                    print("publish timout")
+                    print("publish timeout")
                     state = "publish_map"
                     break
             if state != "publish_map":
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             paired_actual_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
                 current_map=actual_map_observed,
                 newly_observed_obstacles=new_observation,
-                threshold=1.0,
+                threshold=0.9,
             )
 
             # update paired mapped obstacles
@@ -183,7 +183,7 @@ if __name__ == "__main__":
                 paired_candidate_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
                     current_map=candidate_map_observed,
                     newly_observed_obstacles=new_observation,
-                    threshold=0.8,
+                    threshold=0.5,
                 )
 
                 # update paired candidate obstacles
