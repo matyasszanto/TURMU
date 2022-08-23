@@ -76,7 +76,7 @@ def subscribe(client: mqtt_client, topic, obstacles=None, timestamps=None, senso
     def on_message(client, userdata, msg):
         message_dict = parse_message(message=msg)
         try:
-            if "obstacles" in message_dict:
+            if "obstacles" in message_dict and message_dict["obstacles"] != []:
                 for obstacle_dict in message_dict["obstacles"]:
                     obstacle_ = mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(obstacle_dict)
                     obstacles.append(obstacle_)
