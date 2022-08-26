@@ -3,6 +3,7 @@ import time
 
 import map_obstacle as mo
 import mqtt_turmu
+import show_obstacles
 
 if __name__ == "__main__":
 
@@ -107,7 +108,8 @@ if __name__ == "__main__":
             # initialize actual map
             for obstacle in obstacles:
                 obstacle.number_of_observations = map_init_observations
-            actual_map = mo.Map(obstacles_to_map=obstacles, promotion_threshold=mapping_promotion_threshold)
+            # TODO
+            # actual_map = mo.Map(obstacles_to_map=obstacles, promotion_threshold=mapping_promotion_threshold)
 
             state = "idle"
 
@@ -228,6 +230,9 @@ if __name__ == "__main__":
 
             # restart timer for publish timeout
             last_publish_time = datetime.datetime.now()
+
+            # for debug, plot actual map
+            show_obstacles.plot_obstacles(actual_map.mapped_obstacles)
 
             # set next state
             state = "idle"
