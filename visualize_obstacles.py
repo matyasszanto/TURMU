@@ -10,7 +10,8 @@ def plot_obstacles(obstacles_list,
                    long_extremes=None,
                    path="plots",
                    colors=None,
-                   ego_pos=None
+                   ego_pos=None,
+                   observable_radius=0,
                    ):
 
     if ego_pos is None:
@@ -42,6 +43,9 @@ def plot_obstacles(obstacles_list,
 
     ax.scatter(lats, longs, c=colors[:len(lats)])
     ax.scatter(ego_pos[0], ego_pos[1], marker="*")
+    if observable_radius > 0:
+        cir = plt.Circle((ego_pos[0], ego_pos[1]), observable_radius, color='b', fill=False)
+        ax.add_patch(cir)
 
     plt.savefig(f"{path}/{index}.png")
     # plt.show()

@@ -47,11 +47,11 @@ if __name__ == "__main__":
     new_observation = []
 
     # parameter of sensor
-    observable_area_radius = 0.0003
+    observable_area_radius = 0.00012
 
     # Map initialization and mapping threshold
     map_init_observations = 30
-    mapping_promotion_threshold = 20
+    mapping_promotion_threshold = 5
     penalty_points_for_demotion = 4
     actual_map = mo.Map()
     candidate_map = mo.Map()
@@ -118,9 +118,16 @@ if __name__ == "__main__":
                 for obstacle in obstacles:
                     obstacle.number_of_observations = map_init_observations
 
-                actual_map = mo.Map(obstacles_to_map=[],    # TODO =obstacles,
+                actual_map = mo.Map(obstacles_to_map=obstacles,
                                     promotion_threshold=mapping_promotion_threshold,
                                     )
+
+                actual_map.visualize_map(index=loop_count,
+                                         colors=colors,
+                                         out_dir=plots_dir,
+                                         egovehicle=ego_vehicle,
+                                         observable_radius=observable_area_radius,
+                                         )
 
                 state = "idle"
 
@@ -243,6 +250,7 @@ if __name__ == "__main__":
                                          out_dir=plots_dir,
                                          colors=colors,
                                          egovehicle=ego_vehicle,
+                                         observable_radius=observable_area_radius,
                                          )
 
                 continue
