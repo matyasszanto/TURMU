@@ -56,8 +56,9 @@ if __name__ == "__main__":
         long_min = np.min(longs)
         long_max = np.max(longs)
 
-    max_step = 30
-    max_obstacles = 60
+    max_step = 3000
+    max_obstacles = 50
+    top = True
 
     i = 0
     for publication in full_run_json[:max_step]:
@@ -71,11 +72,20 @@ if __name__ == "__main__":
             for obst in obsts:
                 Obsts.append(mo.obstacle_object_from_mqtt_payload_obstacle_as_dict(obst))
 
-            visualize_obstacles.plot_obstacles(Obsts, i, lat_extremes=[lat_min, lat_max], long_extremes=[long_min, long_max])
+            visualize_obstacles.plot_obstacles(Obsts,
+                                               i,
+                                               lat_extremes=[lat_min, lat_max],
+                                               long_extremes=[long_min, long_max],
+                                               )
         else:
             time.sleep(0.3)
 
         # mqtt_turmu.publish_obstacles(client, topic, Obsts)
-        publication["obstacles"] = publication["obstacles"][:max_obstacles]
+        if top:
+            publication["obstacles"] = publication["obstacles"][:max_obstacles]
+        else:
+            publication["obstacles"] = publication["obstacles"][-max_obstacles:]
+
         client.publish(topic, json.dumps(publication))
         print(f"Publication: {i}/{max_step}")
+
