@@ -2,11 +2,19 @@ import numpy as np
 
 import map_obstacle as mo
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 
 
-def plot_obstacles(obstacles_list, index=0, lat_extremes=None, long_extremes=None, path="plots", colors=None):
+def plot_obstacles(obstacles_list,
+                   index=0,
+                   lat_extremes=None,
+                   long_extremes=None,
+                   path="plots",
+                   colors=None,
+                   ego_pos=None
+                   ):
 
+    if ego_pos is None:
+        ego_pos = []
     if colors is None:
         colors = []
     if long_extremes is None:
@@ -33,6 +41,7 @@ def plot_obstacles(obstacles_list, index=0, lat_extremes=None, long_extremes=Non
     #     ax.scatter(lat, long, c=idx)
 
     ax.scatter(lats, longs, c=colors[:len(lats)])
+    ax.scatter(ego_pos[0], ego_pos[1], marker="*")
 
     plt.savefig(f"{path}/{index}.png")
     # plt.show()

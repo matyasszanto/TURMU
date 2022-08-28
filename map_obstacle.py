@@ -386,12 +386,13 @@ class Map:
                                      obstacles=self.mapped_obstacles,
                                      )
 
-    def visualize_map(self, index, out_dir, colors=None):
+    def visualize_map(self, index, out_dir, colors=None, egovehicle=None):
         """
         method for visualizing mapped obstacles
         :param index: loop index for output plot (.png) naming
         :param out_dir: directory to save output to
         :param colors: pre-defined colors array
+        :param egovehicle: ego vehicle object for plotting ego location
 
         """
         if colors is None:
@@ -415,6 +416,7 @@ class Map:
                           lat_extremes=[43.29708, 43.29746],  # use this for real_test.json
                           path=out_dir,
                           colors=colors,
+                          ego_pos=egovehicle.sensor_locations[-1]
                           )
 
 

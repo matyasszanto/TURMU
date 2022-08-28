@@ -47,7 +47,7 @@ if __name__ == "__main__":
     new_observation = []
 
     # parameter of sensor
-    observable_area_radius = 0.0002
+    observable_area_radius = 0.0003
 
     # Map initialization and mapping threshold
     map_init_observations = 30
@@ -242,6 +242,7 @@ if __name__ == "__main__":
                 actual_map.visualize_map(index=loop_count,
                                          out_dir=plots_dir,
                                          colors=colors,
+                                         egovehicle=ego_vehicle,
                                          )
 
                 continue
