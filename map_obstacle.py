@@ -5,15 +5,16 @@ import numpy as np
 import math
 from scipy.optimize import linear_sum_assignment as magyar
 import json
+import copy
 
 import mqtt_turmu
 import visualize_obstacles as vo
 
 # set up sigma parameters for rbf calculation
 # higher sigma means more tolerance
-sigmas = [0.5,  # sigma_latitude
-          0.5,  # sigma_longitude
-          2,  # sigma_speed
+sigmas = [0.00001,  # sigma_latitude
+          0.00001,  # sigma_longitude
+          0.000001,  # sigma_speed
           1,  # sigma_width
           1,  # sigma_length
           ]
@@ -59,7 +60,6 @@ class Obstacle:
         self.first_timestamp = first_timestamp
         self.latest_timestamp = latest_timestamp
         self.penalty_points: int = 0
-
 
     def print(self):
         """
@@ -275,8 +275,12 @@ class Map:
         if not subset:
             for i, obstacle in enumerate(obstacles_to_map):
                 obstacle.obstacle_id = i
+            # if new map: make a copy of obstacles to be mapped
+            self.mapped_obstacles = copy.deepcopy(obstacles_to_map)
+        else:
+            # if subset: copy items list to map
+            self.mapped_obstacles = obstacles_to_map
 
-        self.mapped_obstacles = obstacles_to_map
         self.number_of_mapped_obstacles = len(obstacles_to_map) if self.mapped_obstacles is not None else 0
         self.promotion_threshold = promotion_threshold
 
@@ -284,7 +288,7 @@ class Map:
                    paired_mapped_obstacles_indices,
                    paired_newly_observed_obstacle_indices,
                    newly_observed_obstacles,
-                   promoted_obstacle_observations=1,
+                   promotion=False
                    ):
         """
         Method for updating means and timestamps of mapped obstacles with new observation
@@ -292,9 +296,9 @@ class Map:
         :param paired_mapped_obstacles_indices: output of pair_obstacles function
         :param paired_newly_observed_obstacle_indices: output of pair_obstacles function
         :param newly_observed_obstacles: array of instances of map_obstacle.Obstacle class
-        :param promoted_obstacle_observations: number of observation for obstacle syncing if promotion,
-                                               default value is 1 for new observations
+        :param promotion: flag to show if update type is promotion
         """
+
         for i, paired_mapped_index in enumerate(paired_mapped_obstacles_indices):
 
             # get means and no_observations from paired mapped obstacle
@@ -307,11 +311,15 @@ class Map:
             # get values from newly observed paired obstacle
             new_vals = newly_observed_obstacles[paired_newly_observed_obstacle_index].strip_params()
 
+            new_number_of_observations = \
+                newly_observed_obstacles[paired_newly_observed_obstacle_index].number_of_observations
+
             # calculate new means
             updated_means = np.empty_like(mapped_means)
             for j, (old_val, new_val) in enumerate(zip(mapped_means, new_vals)):
                 weighted_mean = old_val * n
-                updated_means[j] = (weighted_mean + new_val) / (n + promoted_obstacle_observations)
+                weighted_new_val = new_val * new_number_of_observations
+                updated_means[j] = (weighted_mean + weighted_new_val) / (n + new_number_of_observations)
 
             # update mapped obstacle means in map class
             self.mapped_obstacles[paired_mapped_index].lat = updated_means[0]
@@ -321,7 +329,7 @@ class Map:
             self.mapped_obstacles[paired_mapped_index].length = updated_means[4]
 
             # increase number of observations for obstacle
-            self.mapped_obstacles[paired_mapped_index].number_of_observations += promoted_obstacle_observations
+            self.mapped_obstacles[paired_mapped_index].number_of_observations += new_number_of_observations
 
             # update latest_timestamp of matched object
             self.mapped_obstacles[paired_mapped_index].latest_timestamp = \
@@ -394,32 +402,39 @@ class Map:
         :param colors: pre-defined colors array
         :param egovehicle: ego vehicle object for plotting ego location
         :param observable_radius: radius used for creating map subsets
-
         """
-        if colors is None:
-            colors = []
-        lats = np.array(list(o.lat for o in self.mapped_obstacles))
-        longs = np.array(list(o.long for o in self.mapped_obstacles))
-
-        lat_min = np.min(lats)
-        lat_max = np.max(lats)
-        long_min = np.min(longs)
-        long_max = np.max(longs)
-
+        # create directory
         if not os.path.exists(out_dir):
             os.mkdir(out_dir)
 
-        vo.plot_obstacles(obstacles_list=self.mapped_obstacles,
-                          index=index,
-                          # long_extremes=[long_min, long_max],     # use this for live calculated values
-                          # lat_extremes=[lat_min, lat_max],        # use this for live calculated values
-                          long_extremes=[-2.87161, -2.87119],  # use this for real_test.json
-                          lat_extremes=[43.29708, 43.29746],  # use this for real_test.json
-                          path=out_dir,
-                          colors=colors,
-                          ego_pos=egovehicle.sensor_locations[-1],
-                          observable_radius=observable_radius,
-                          )
+        # colors should not be None, but just in case
+        if colors is None:
+            colors = []
+
+        # check if map is empty
+        if len(self.mapped_obstacles) != 0:
+
+            # for live calculated min-max values
+            # currently unused
+            lats = np.array(list(o.lat for o in self.mapped_obstacles))
+            longs = np.array(list(o.long for o in self.mapped_obstacles))
+            lat_min = np.min(lats)
+            lat_max = np.max(lats)
+            long_min = np.min(longs)
+            long_max = np.max(longs)
+
+            # run plotting function
+            vo.plot_obstacles(obstacles_list=self.mapped_obstacles,
+                              index=index,
+                              # long_extremes=[long_min, long_max],     # use this for live calculated values
+                              # lat_extremes=[lat_min, lat_max],        # use this for live calculated values
+                              long_extremes=[-2.87161, -2.87119],       # use this for real_test.json
+                              lat_extremes=[43.29708, 43.29746],        # use this for real_test.json
+                              path=out_dir,
+                              colors=colors,
+                              ego_pos=egovehicle.sensor_locations[-1],
+                              observable_radius=observable_radius,
+                              )
 
 
 def demote_obstacle(actual_map_observable_subset: Map,
@@ -469,7 +484,7 @@ def demote_obstacle(actual_map_observable_subset: Map,
             candidate_map_observable_subset.mapped_obstacles.append(not_observed_obstacle)
 
 
-def promote_obstacles(candidate_map: Map, actual_map: Map):
+def promote_obstacles(candidate_map: Map, actual_map: Map, promotion_merge_threshold):
     """
     Method to include obstacles from candidate map to actual map
         1. Check if obstacle has been observed more times, then actual map threshold
@@ -480,6 +495,7 @@ def promote_obstacles(candidate_map: Map, actual_map: Map):
 
     :param actual_map: map containing already mapped obstacles
     :param candidate_map: map containing obstacles with candidate obstacles
+    :param promotion_merge_threshold: threshold value to be used for similarity checking
     """
 
     # find promotable objects
@@ -490,27 +506,33 @@ def promote_obstacles(candidate_map: Map, actual_map: Map):
             promotable_obstacles.append(obstacle)
 
     # find pairings for actual map
-    paired_applied_mapped_obstacle_indices, paired_candidate_obstacle_indices = pair_obstacles(
+    paired_applied_mapped_obstacle_indices, paired_promotable_obstacle_indices = pair_obstacles(
         current_map=actual_map,
         newly_observed_obstacles=promotable_obstacles,
-        threshold=0.1,
+        threshold=promotion_merge_threshold,
     )
 
     # update paired mapped obstacles
     actual_map.update_map(paired_mapped_obstacles_indices=paired_applied_mapped_obstacle_indices,
-                          paired_newly_observed_obstacle_indices=paired_candidate_obstacle_indices,
+                          paired_newly_observed_obstacle_indices=paired_promotable_obstacle_indices,
                           newly_observed_obstacles=promotable_obstacles,
+                          promotion=True,
                           )
 
-    # remove paired obstacles from the promotable obstacles
-    paired_candidate_obstacle_indices.sort()
-    for i, index in enumerate(paired_candidate_obstacle_indices):
+    # remove paired obstacles from promotable obstacles
+    paired_promotable_obstacle_indices.sort()
+    for i, index in enumerate(paired_promotable_obstacle_indices):
+        candidate_map.mapped_obstacles.remove(promotable_obstacles[index - i])
         promotable_obstacles.pop(index - i)
 
     # promote the remaining promotable obstacles
     for obstacle in promotable_obstacles:
         actual_map.mapped_obstacles.append(obstacle)
         candidate_map.mapped_obstacles.remove(obstacle)
+
+    # update candidate map length
+    candidate_map.number_of_mapped_obstacles = len(candidate_map.mapped_obstacles)
+    pass
 
 
 def pair_obstacles(current_map, newly_observed_obstacles, threshold=0.8):   # TODO optimize threshold value
