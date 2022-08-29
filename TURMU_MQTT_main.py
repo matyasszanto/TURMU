@@ -69,10 +69,12 @@ if __name__ == "__main__":
 
     # map visualization
     plots_dir = f"plots/{datetime.datetime.now()}"
-    sim_num_obsts = 50
+    sim_num_obsts = 80
     colors = cm.tab20c(np.linspace(0, 1, sim_num_obsts + 10))  # gist_rainbow    viridis    tab20 tab20b tab20c
 
     # debug
+    verbose = False
+    plot = False
     loop_count: int = 0
     print("start main loop")
 
@@ -81,15 +83,16 @@ if __name__ == "__main__":
     # Main loop
     while True:
         loop_count += 1
-        print(f"iteration {loop_count}, state: {state}")
-        print(f"Actual map objects: {len(actual_map.mapped_obstacles)}")
-        print(f"Candidate map objects: {len(candidate_map.mapped_obstacles)}")
-        obs_s = []
-        for obst in candidate_map.mapped_obstacles:
-            obs_s.append(obst.number_of_observations)
-        if len(obs_s) != 0:
-            print(f"Maximum number of candidate observations: {max(obs_s)}")
-        print()
+        if verbose:
+            print(f"iteration {loop_count}, state: {state}")
+            print(f"Actual map objects: {len(actual_map.mapped_obstacles)}")
+            print(f"Candidate map objects: {len(candidate_map.mapped_obstacles)}")
+            obs_s = []
+            for obst in candidate_map.mapped_obstacles:
+                obs_s.append(obst.number_of_observations)
+            if len(obs_s) != 0:
+                print(f"Maximum number of candidate observations: {max(obs_s)}")
+            print()
 
         """
         Possible states are:
@@ -98,200 +101,202 @@ if __name__ == "__main__":
         publish_map
         exit
         """
-        # init state: set up initial actual map and empty candidate map
-        if state == "init":
 
-            # initialize ego vehicle
-            ego_vehicle = mo.Egovehicle()
+        try:
+            # init state: set up initial actual map and empty candidate map
+            if state == "init":
 
-            # initialize empty candidate map
-            candidate_map = mo.Map(obstacles_to_map=[],
-                                   promotion_threshold=0,
-                                   )
-            # listen to MQTT
-            while len(obstacles) == 0:
-                client.loop(0.1)
-                mqtt_turmu.subscribe(client=client,
-                                     topic=topic_listen,
-                                     obstacles=obstacles,
-                                     sensor_locations=ego_vehicle.sensor_locations,
-                                     timestamps=ego_vehicle.timestamps,
-                                     )
+                # initialize ego vehicle
+                ego_vehicle = mo.Egovehicle()
 
-            # initialize actual map
-            for obstacle in obstacles:
-                obstacle.number_of_observations = map_init_observations
+                # initialize empty candidate map
+                candidate_map = mo.Map(obstacles_to_map=[],
+                                       promotion_threshold=0,
+                                       )
+                # listen to MQTT
+                while len(obstacles) == 0:
+                    client.loop(0.1)
+                    mqtt_turmu.subscribe(client=client,
+                                         topic=topic_listen,
+                                         obstacles=obstacles,
+                                         sensor_locations=ego_vehicle.sensor_locations,
+                                         timestamps=ego_vehicle.timestamps,
+                                         )
+                # initialize actual map
+                for obstacle in obstacles:
+                    obstacle.number_of_observations = map_init_observations
 
-            actual_map = mo.Map(obstacles_to_map=[],  # TODO =obstacles,
-                                promotion_threshold=mapping_promotion_obs_threshold,
-                                )
+                actual_map = mo.Map(obstacles_to_map=[],
+                                    promotion_threshold=mapping_promotion_obs_threshold,
+                                    )
 
-            actual_map.visualize_map(index=loop_count,
-                                     colors=colors,
-                                     out_dir=plots_dir,
-                                     egovehicle=ego_vehicle,
-                                     observable_radius=observable_area_radius,
-                                     )
+                actual_map.visualize_map(index=loop_count,
+                                         colors=colors,
+                                         out_dir=plots_dir,
+                                         egovehicle=ego_vehicle,
+                                         observable_radius=observable_area_radius,
+                                         )
 
-            state = "idle"
+                state = "idle"
 
-            last_publish_time = datetime.datetime.now()
-            continue
+                last_publish_time = datetime.datetime.now()
+                continue
 
-        # idle state: listen to the MQTT topic, and obtain new broadcast observation (i.e., obstacles)
-        #             and sensor locations as well as separate timestamps to the ego_vehicle instant
-        elif state == "idle":
-            # listen to MQTT
-            while len(new_observation) == 0:
-                client.loop(1)
-                mqtt_turmu.subscribe(client=client,
-                                     topic=topic_listen,
-                                     obstacles=new_observation,
-                                     sensor_locations=ego_vehicle.sensor_locations,
-                                     timestamps=ego_vehicle.timestamps,
-                                     )
-                since_last_publish = datetime.datetime.now() - last_publish_time
-                if since_last_publish.seconds > publish_timeout:
-                    print("publish timeout")
-                    state = "publish_map"
-                    break
-            if state != "publish_map":
-                state = "update_map"
+            # idle state: listen to the MQTT topic, and obtain new broadcast observation (i.e., obstacles)
+            #             and sensor locations as well as separate timestamps to the ego_vehicle instant
+            elif state == "idle":
+                # listen to MQTT
+                while len(new_observation) == 0:
+                    client.loop(1)
+                    mqtt_turmu.subscribe(client=client,
+                                         topic=topic_listen,
+                                         obstacles=new_observation,
+                                         sensor_locations=ego_vehicle.sensor_locations,
+                                         timestamps=ego_vehicle.timestamps,
+                                         )
+                    since_last_publish = datetime.datetime.now() - last_publish_time
+                    if since_last_publish.seconds > publish_timeout:
+                        print("publish timeout")
+                        state = "publish_map"
+                        break
+                if state != "publish_map":
+                    state = "update_map"
 
-            continue
-        # update_map state: include obstacles in candidate map, and if they cross the threshold,
-        #                   include them in the actual map, too
-        elif state == "update_map":
+                continue
+            # update_map state: include obstacles in candidate map, and if they cross the threshold,
+            #                   include them in the actual map, too
+            elif state == "update_map":
 
-            # TODO debug visualization
-            new_observation_map = mo.Map(obstacles_to_map=new_observation)
+                if plot:
+                    new_observation_map = mo.Map(obstacles_to_map=new_observation)
 
-            new_observation_map.visualize_map(index=loop_count,
-                                              out_dir=plots_dir+"/no",
-                                              colors=colors,
-                                              egovehicle=ego_vehicle,
-                                              observable_radius=observable_area_radius,
-                                              )
+                    new_observation_map.visualize_map(index=loop_count,
+                                                      out_dir=plots_dir+"/no",
+                                                      colors=colors,
+                                                      egovehicle=ego_vehicle,
+                                                      observable_radius=observable_area_radius,
+                                                      )
 
-            # for state selector choice
-            actual_obstacles_before_update = len(actual_map.mapped_obstacles)
+                # for state selector choice
+                actual_obstacles_before_update = len(actual_map.mapped_obstacles)
 
-            # subset of maps that can be observed
-            actual_map_observed = actual_map.subset_in_observed_area(
-                sensor_location=ego_vehicle.sensor_locations[-1],
-                observable_area_radius=observable_area_radius,
-            )
-            candidate_map_observed = candidate_map.subset_in_observed_area(
-                sensor_location=ego_vehicle.sensor_locations[-1],
-                observable_area_radius=observable_area_radius*10,
-            )
-
-            # find pairings for actual map
-            paired_actual_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
-                current_map=actual_map_observed,
-                newly_observed_obstacles=new_observation,
-                threshold=actual_map_similarity_threshold,
-            )
-
-            # update paired mapped obstacles
-            actual_map_observed.update_map(paired_mapped_obstacles_indices=paired_actual_mapped_obstacle_indices,
-                                           paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
-                                           newly_observed_obstacles=new_observation)
-
-            # penalize not observed obstacles and demote them if necessary
-            mo.demote_obstacle(actual_map_observable_subset=actual_map_observed,
-                               actual_map=actual_map,
-                               paired_mapped_obstacles=paired_actual_mapped_obstacle_indices,
-                               candidate_map=candidate_map,
-                               candidate_map_observable_subset=candidate_map_observed,
-                               penalty_points_for_demotion=penalty_points_for_demotion,
-                               )
-
-            # remove paired obstacles from the list of new observation
-            paired_new_obstacle_indices.sort()
-            for i, index in enumerate(paired_new_obstacle_indices):
-                new_observation.pop(index - i)
-
-            # if there's anything remaining in new_observations not paired up with the actual map
-            if len(new_observation) != 0:
-
-                # find pairings for candidate map
-                paired_candidate_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
-                    current_map=candidate_map_observed,
-                    newly_observed_obstacles=new_observation,
-                    threshold=candidate_map_similarity_threshold,
+                # subset of maps that can be observed
+                actual_map_observed = actual_map.subset_in_observed_area(
+                    sensor_location=ego_vehicle.sensor_locations[-1],
+                    observable_area_radius=observable_area_radius,
+                )
+                candidate_map_observed = candidate_map.subset_in_observed_area(
+                    sensor_location=ego_vehicle.sensor_locations[-1],
+                    observable_area_radius=observable_area_radius*10,
                 )
 
-                # update paired candidate obstacles
-                candidate_map_observed.update_map(
-                    paired_mapped_obstacles_indices=paired_candidate_mapped_obstacle_indices,
-                    paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
-                    newly_observed_obstacles=new_observation)
+                # find pairings for actual map
+                paired_actual_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
+                    current_map=actual_map_observed,
+                    newly_observed_obstacles=new_observation,
+                    threshold=actual_map_similarity_threshold,
+                )
+
+                # update paired mapped obstacles
+                actual_map_observed.update_map(paired_mapped_obstacles_indices=paired_actual_mapped_obstacle_indices,
+                                               paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
+                                               newly_observed_obstacles=new_observation)
+
+                # penalize not observed obstacles and demote them if necessary
+                mo.demote_obstacle(actual_map_observable_subset=actual_map_observed,
+                                   actual_map=actual_map,
+                                   paired_mapped_obstacles=paired_actual_mapped_obstacle_indices,
+                                   candidate_map=candidate_map,
+                                   candidate_map_observable_subset=candidate_map_observed,
+                                   penalty_points_for_demotion=penalty_points_for_demotion,
+                                   )
 
                 # remove paired obstacles from the list of new observation
                 paired_new_obstacle_indices.sort()
                 for i, index in enumerate(paired_new_obstacle_indices):
                     new_observation.pop(index - i)
 
-            # add anything that remains to the candidate map
-            if len(new_observation) != 0:
-                for new_obstacle in new_observation:
+                # if there's anything remaining in new_observations not paired up with the actual map
+                if len(new_observation) != 0:
 
-                    # set unique obstacle_id
-                    new_obstacle.obstacle_id = max([actual_map.highest_id(), candidate_map.highest_id()]) + 1
-                    print(f"new ID is: {new_obstacle.obstacle_id}")
+                    # find pairings for candidate map
+                    paired_candidate_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
+                        current_map=candidate_map_observed,
+                        newly_observed_obstacles=new_observation,
+                        threshold=candidate_map_similarity_threshold,
+                    )
 
-                    # add to candidate map
-                    candidate_map.mapped_obstacles.append(new_obstacle)
+                    # update paired candidate obstacles
+                    candidate_map_observed.update_map(
+                        paired_mapped_obstacles_indices=paired_candidate_mapped_obstacle_indices,
+                        paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
+                        newly_observed_obstacles=new_observation)
 
-                # empty new_observation array
-                new_observation = []
+                    # remove paired obstacles from the list of new observation
+                    paired_new_obstacle_indices.sort()
+                    for i, index in enumerate(paired_new_obstacle_indices):
+                        new_observation.pop(index - i)
 
-            # include those obstacles from the candidate map, which have reached the threshold, to the actual map
-            mo.promote_obstacles(candidate_map=candidate_map,
-                                 actual_map=actual_map,
-                                 promotion_merge_threshold=mapping_promotion_similarity_threshold,
-                                 )
+                # add anything that remains to the candidate map
+                if len(new_observation) != 0:
+                    for new_obstacle in new_observation:
 
-            # set next state - publish obstacles, if new obstacle has been added to actual_map
-            #                  idle, if actual map hasn't changed
-            if actual_obstacles_before_update != len(actual_map.mapped_obstacles):
-                state = "publish_map"
-            else:
-                state = "idle"
+                        # set unique obstacle_id
+                        new_obstacle.obstacle_id = max([actual_map.highest_id(), candidate_map.highest_id()]) + 1
+                        if verbose:
+                            print(f"new ID is: {new_obstacle.obstacle_id}")
 
-            # TODO debug, visualize maps
-            actual_map.visualize_map(index=loop_count,
-                                     out_dir=plots_dir,
-                                     colors=colors,
-                                     egovehicle=ego_vehicle,
-                                     observable_radius=observable_area_radius,
+                        # add to candidate map
+                        candidate_map.mapped_obstacles.append(new_obstacle)
+                    if verbose:
+                        print()
+                    # empty new_observation array
+                    new_observation = []
+
+                # include those obstacles from the candidate map, which have reached the threshold, to the actual map
+                mo.promote_obstacles(candidate_map=candidate_map,
+                                     actual_map=actual_map,
+                                     promotion_merge_threshold=mapping_promotion_similarity_threshold,
                                      )
 
-            candidate_map.visualize_map(index=loop_count,
-                                        out_dir=plots_dir+"/cm",
-                                        colors=colors,
-                                        egovehicle=ego_vehicle,
-                                        observable_radius=observable_area_radius,
-                                        )
+                # set next state - publish obstacles, if new obstacle has been added to actual_map
+                #                  idle, if actual map hasn't changed
+                if actual_obstacles_before_update != len(actual_map.mapped_obstacles):
+                    state = "publish_map"
+                else:
+                    state = "idle"
 
-            continue
-        # publish map state: publish map through mqtt
-        elif state == "publish_map":
-            # publish mapped objects
-            actual_map.publish_map(client=client, topic=topic_publish)
+                if plot:
+                    actual_map.visualize_map(index=loop_count,
+                                             out_dir=plots_dir,
+                                             colors=colors,
+                                             egovehicle=ego_vehicle,
+                                             observable_radius=observable_area_radius,
+                                             )
 
-            # restart timer for publish timeout
-            last_publish_time = datetime.datetime.now()
+                    candidate_map.visualize_map(index=loop_count,
+                                                out_dir=plots_dir+"/cm",
+                                                colors=colors,
+                                                egovehicle=ego_vehicle,
+                                                observable_radius=observable_area_radius,
+                                                )
 
-            # set next state
-            state = "idle"
-            continue
+                continue
+            # publish map state: publish map through mqtt
+            elif state == "publish_map":
+                # publish mapped objects
+                actual_map.publish_map(client=client, topic=topic_publish)
 
-        # except Exception as e:
-        #     print(f"Error: {e}")
-        #     print(f"Final index: {loop_count}")
-        #     print(f"Final state: {state}")
-        #     print("Exiting...")
-        #     client.disconnect()
-        #     break
+                # restart timer for publish timeout
+                last_publish_time = datetime.datetime.now()
+
+                # set next state
+                state = "idle"
+                continue
+
+        except Exception as e:
+            print(f"Error: {e}")
+            print(f"Final index: {loop_count}")
+            print(f"Final state: {state}")
+            print("Continuing...")
+            pass
