@@ -49,7 +49,8 @@ def plot_obstacles(obstacles_list,
 
     plt.savefig(f"{path}/{index}.png")
     # plt.show()
-    plt.cla()
+    fig.clf()
+    plt.close()
 
 
 if __name__ == "__main__":
