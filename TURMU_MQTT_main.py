@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # Map initialization and mapping threshold
     map_init_observations = 30
     mapping_promotion_obs_threshold = 8
-    penalty_points_for_demotion = 7
+    penalty_points_for_demotion = 20
     actual_map = mo.Map()
     candidate_map = mo.Map()
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     colors = cm.tab20c(np.linspace(0, 1, sim_num_obsts + 10))  # gist_rainbow    viridis    tab20 tab20b tab20c
 
     # debug
-    verbose = False
+    verbose = True
     plot = False
     loop_count: int = 0
     print("start main loop")
