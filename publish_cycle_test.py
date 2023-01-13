@@ -1,3 +1,4 @@
+import datetime
 import time
 import json
 
@@ -27,7 +28,8 @@ if __name__ == "__main__":
                                      keyfile_path
                                      )
 
-    f = open("real_test.json")
+    # f = open("real_test.json")
+    f = open("perf_test.json")
     full_run_json = json.load(f)
 
     plot = False
@@ -38,7 +40,7 @@ if __name__ == "__main__":
         max_step = (max_step_map if max_step_map < len(full_run_json) else len(full_run_json))
 
         lats, longs = np.array([]), np.array([])
-        for publication in full_run_json[:max_step_map]:
+        for publication in full_run_json[:max_step]:
             max_obstacles = max_obstacles_map if max_obstacles_map < len(
                 publication["obstacles"]
             ) else len(
@@ -87,5 +89,4 @@ if __name__ == "__main__":
             publication["obstacles"] = publication["obstacles"][-max_obstacles:]
 
         client.publish(topic, json.dumps(publication))
-        print(f"Publication: {i}/{max_step}")
-
+        print(f"Publication: {i}/{max_step}. Current time in seconds: {datetime.datetime.now().strftime('%S,%f')}")

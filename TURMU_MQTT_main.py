@@ -62,7 +62,7 @@ if __name__ == "__main__":
     mapping_promotion_similarity_threshold = 0.92
 
     # map publication threshold
-    publish_timeout = 5     # seconds
+    publish_timeout = 50     # seconds TODO this was changed from 5
 
     # Ego-vehicle initialization
     ego_vehicle = None
@@ -72,9 +72,12 @@ if __name__ == "__main__":
     sim_num_obsts = 80
     colors = cm.tab20c(np.linspace(0, 1, sim_num_obsts + 10))  # gist_rainbow    viridis    tab20 tab20b tab20c
 
+    # performance test
+    published_positions = []
+
     # debug
     verbose = True
-    plot = True
+    plot = False
     loop_count: int = 0
     print("start main loop")
 
@@ -127,15 +130,15 @@ if __name__ == "__main__":
                     obstacle.number_of_observations = map_init_observations
 
                 employed_map = mo.Map(obstacles_to_map=[],
-                                    promotion_threshold=mapping_promotion_obs_threshold,
-                                    )
-
-                employed_map.visualize_map(index=loop_count,
-                                         colors=colors,
-                                         out_dir=plots_dir,
-                                         egovehicle=ego_vehicle,
-                                         observable_radius=observable_area_radius,
-                                         )
+                                      promotion_threshold=mapping_promotion_obs_threshold,
+                                      )
+                if plot:
+                    employed_map.visualize_map(index=loop_count,
+                                               colors=colors,
+                                               out_dir=plots_dir,
+                                               egovehicle=ego_vehicle,
+                                               observable_radius=observable_area_radius,
+                                               )
 
                 state = "idle"
 
@@ -284,6 +287,11 @@ if __name__ == "__main__":
                 continue
             # publish map state: publish map through mqtt
             elif state == "publish_map":
+                print(f"Publish start time: {datetime.datetime.now().strftime('%S,%f')}")
+                published_positions.append([employed_map.mapped_obstacles[0].lat,
+                                            employed_map.mapped_obstacles[0].long]
+                                           )
+                np.savetxt("positions.csv", np.array(published_positions), delimiter=";")
                 # publish mapped objects
                 employed_map.publish_map(client=client, topic=topic_publish)
 

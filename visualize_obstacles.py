@@ -1,3 +1,5 @@
+import datetime
+
 import numpy as np
 
 import map_obstacle as mo
@@ -47,7 +49,7 @@ def plot_obstacles(obstacles_list,
         cir = plt.Circle((ego_pos[0], ego_pos[1]), observable_radius, color='b', fill=False)
         ax.add_patch(cir)
 
-    plt.savefig(f"{path}/{index}.png")
+    plt.savefig(f"{path}/{index}_{datetime.datetime.now()}.png")
     # plt.show()
     fig.clf()
     plt.close()
