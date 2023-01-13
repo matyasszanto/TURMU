@@ -437,8 +437,8 @@ class Map:
                               )
 
 
-def demote_obstacle(actual_map_observable_subset: Map,
-                    actual_map: Map,
+def demote_obstacle(employed_map_observable_subset: Map,
+                    employed_map: Map,
                     paired_mapped_obstacles: list,
                     candidate_map: Map,
                     candidate_map_observable_subset: Map,
@@ -448,18 +448,18 @@ def demote_obstacle(actual_map_observable_subset: Map,
     """
     Demote obstacles that have not been observed for the last "number of missed observations to demote" times.
 
-    :param actual_map_observable_subset: Map object of currently observed actual map
-    :param actual_map: Map object of actual map
+    :param employed_map_observable_subset: Map object of currently observed employed map
+    :param employed_map: Map object of employed map
     :param paired_mapped_obstacles: Output vector of indices of magyar algorithm
     :param candidate_map: Map object of candidate map
     :param candidate_map_observable_subset: Map object of currently observed candidate map
     :param penalty_points_for_demotion: Threshold value for obstacle demotion
     """
     # find obstacles that should have been observed
-    should_be_observed = np.array(actual_map_observable_subset.mapped_obstacles)
+    should_be_observed = np.array(employed_map_observable_subset.mapped_obstacles)
 
     # find obstacles that were actually observed
-    are_observed = np.array(actual_map_observable_subset.mapped_obstacles)[paired_mapped_obstacles]
+    are_observed = np.array(employed_map_observable_subset.mapped_obstacles)[paired_mapped_obstacles]
 
     # find missing elements
     mask = np.isin(should_be_observed, are_observed)
@@ -473,27 +473,27 @@ def demote_obstacle(actual_map_observable_subset: Map,
         # demote to candidate map, if times missed is above threshold
         if not_observed_obstacle.penalty_points > penalty_points_for_demotion:
             # reset number of observation below map addition threshold
-            not_observed_obstacle.number_of_observations = actual_map.promotion_threshold - 1
+            not_observed_obstacle.number_of_observations = employed_map.promotion_threshold - 1
 
-            # remove obstacle from actual map and its observed version
-            actual_map.mapped_obstacles.remove(not_observed_obstacle)
-            actual_map_observable_subset.mapped_obstacles.remove(not_observed_obstacle)
+            # remove obstacle from employed map and its observed version
+            employed_map.mapped_obstacles.remove(not_observed_obstacle)
+            employed_map_observable_subset.mapped_obstacles.remove(not_observed_obstacle)
 
             # add obstacle to candidate map and its observed version
             candidate_map.mapped_obstacles.append(not_observed_obstacle)
             candidate_map_observable_subset.mapped_obstacles.append(not_observed_obstacle)
 
 
-def promote_obstacles(candidate_map: Map, actual_map: Map, promotion_merge_threshold):
+def promote_obstacles(candidate_map: Map, employed_map: Map, promotion_merge_threshold):
     """
-    Method to include obstacles from candidate map to actual map
-        1. Check if obstacle has been observed more times, then actual map threshold
-        2. Check if obstacle can be paired with actual map obstacle
-        3.1 If yes, pair with actual map obstacle and increment the observation counter
-        3.2 If no, add obstacle to actual map
+    Method to include obstacles from candidate map to employed map
+        1. Check if obstacle has been observed more times, then employed map threshold
+        2. Check if obstacle can be paired with employed map obstacle
+        3.1 If yes, pair with employed map obstacle and increment the observation counter
+        3.2 If no, add obstacle to employed map
         3. Remove obstacle from candidate map
 
-    :param actual_map: map containing already mapped obstacles
+    :param employed_map: map containing already mapped obstacles
     :param candidate_map: map containing obstacles with candidate obstacles
     :param promotion_merge_threshold: threshold value to be used for similarity checking
     """
@@ -501,19 +501,19 @@ def promote_obstacles(candidate_map: Map, actual_map: Map, promotion_merge_thres
     # find promotable objects
     promotable_obstacles = []
     for obstacle in candidate_map.mapped_obstacles:
-        if obstacle.number_of_observations > actual_map.promotion_threshold:
+        if obstacle.number_of_observations > employed_map.promotion_threshold:
             obstacle.penalty_points = 0
             promotable_obstacles.append(obstacle)
 
-    # find pairings for actual map
+    # find pairings for employed map
     paired_applied_mapped_obstacle_indices, paired_promotable_obstacle_indices = pair_obstacles(
-        current_map=actual_map,
+        current_map=employed_map,
         newly_observed_obstacles=promotable_obstacles,
         threshold=promotion_merge_threshold,
     )
 
     # update paired mapped obstacles
-    actual_map.update_map(paired_mapped_obstacles_indices=paired_applied_mapped_obstacle_indices,
+    employed_map.update_map(paired_mapped_obstacles_indices=paired_applied_mapped_obstacle_indices,
                           paired_newly_observed_obstacle_indices=paired_promotable_obstacle_indices,
                           newly_observed_obstacles=promotable_obstacles,
                           promotion=True,
@@ -527,7 +527,7 @@ def promote_obstacles(candidate_map: Map, actual_map: Map, promotion_merge_thres
 
     # promote the remaining promotable obstacles
     for obstacle in promotable_obstacles:
-        actual_map.mapped_obstacles.append(obstacle)
+        employed_map.mapped_obstacles.append(obstacle)
         candidate_map.mapped_obstacles.remove(obstacle)
 
     # update candidate map length

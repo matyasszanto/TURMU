@@ -53,11 +53,11 @@ if __name__ == "__main__":
     map_init_observations = 30
     mapping_promotion_obs_threshold = 8
     penalty_points_for_demotion = 20
-    actual_map = mo.Map()
+    employed_map = mo.Map()
     candidate_map = mo.Map()
 
     # similarity thresholds - higher means more strict pairing rules
-    actual_map_similarity_threshold = 0.999
+    employed_map_similarity_threshold = 0.999
     candidate_map_similarity_threshold = 0.9
     mapping_promotion_similarity_threshold = 0.92
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     # debug
     verbose = True
-    plot = False
+    plot = True
     loop_count: int = 0
     print("start main loop")
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         loop_count += 1
         if verbose:
             print(f"iteration {loop_count}, state: {state}")
-            print(f"Actual map objects: {len(actual_map.mapped_obstacles)}")
+            print(f"Employed map objects: {len(employed_map.mapped_obstacles)}")
             print(f"Candidate map objects: {len(candidate_map.mapped_obstacles)}")
             obs_s = []
             for obst in candidate_map.mapped_obstacles:
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         """
 
         try:
-            # init state: set up initial actual map and empty candidate map
+            # init state: set up initial employed map and empty candidate map
             if state == "init":
 
                 # initialize ego vehicle
@@ -122,15 +122,15 @@ if __name__ == "__main__":
                                          sensor_locations=ego_vehicle.sensor_locations,
                                          timestamps=ego_vehicle.timestamps,
                                          )
-                # initialize actual map
+                # initialize employed map
                 for obstacle in obstacles:
                     obstacle.number_of_observations = map_init_observations
 
-                actual_map = mo.Map(obstacles_to_map=[],
+                employed_map = mo.Map(obstacles_to_map=[],
                                     promotion_threshold=mapping_promotion_obs_threshold,
                                     )
 
-                actual_map.visualize_map(index=loop_count,
+                employed_map.visualize_map(index=loop_count,
                                          colors=colors,
                                          out_dir=plots_dir,
                                          egovehicle=ego_vehicle,
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
                 continue
             # update_map state: include obstacles in candidate map, and if they cross the threshold,
-            #                   include them in the actual map, too
+            #                   include them in the employed map, too
             elif state == "update_map":
 
                 if plot:
@@ -178,10 +178,10 @@ if __name__ == "__main__":
                                                       )
 
                 # for state selector choice
-                actual_obstacles_before_update = len(actual_map.mapped_obstacles)
+                employed_obstacles_before_update = len(employed_map.mapped_obstacles)
 
                 # subset of maps that can be observed
-                actual_map_observed = actual_map.subset_in_observed_area(
+                employed_map_observed = employed_map.subset_in_observed_area(
                     sensor_location=ego_vehicle.sensor_locations[-1],
                     observable_area_radius=observable_area_radius,
                 )
@@ -190,22 +190,22 @@ if __name__ == "__main__":
                     observable_area_radius=observable_area_radius*10,
                 )
 
-                # find pairings for actual map
-                paired_actual_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
-                    current_map=actual_map_observed,
+                # find pairings for employed map
+                paired_employed_mapped_obstacle_indices, paired_new_obstacle_indices = mo.pair_obstacles(
+                    current_map=employed_map_observed,
                     newly_observed_obstacles=new_observation,
-                    threshold=actual_map_similarity_threshold,
+                    threshold=employed_map_similarity_threshold,
                 )
 
                 # update paired mapped obstacles
-                actual_map_observed.update_map(paired_mapped_obstacles_indices=paired_actual_mapped_obstacle_indices,
+                employed_map_observed.update_map(paired_mapped_obstacles_indices=paired_employed_mapped_obstacle_indices,
                                                paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
                                                newly_observed_obstacles=new_observation)
 
                 # penalize not observed obstacles and demote them if necessary
-                mo.demote_obstacle(actual_map_observable_subset=actual_map_observed,
-                                   actual_map=actual_map,
-                                   paired_mapped_obstacles=paired_actual_mapped_obstacle_indices,
+                mo.demote_obstacle(employed_map_observable_subset=employed_map_observed,
+                                   employed_map=employed_map,
+                                   paired_mapped_obstacles=paired_employed_mapped_obstacle_indices,
                                    candidate_map=candidate_map,
                                    candidate_map_observable_subset=candidate_map_observed,
                                    penalty_points_for_demotion=penalty_points_for_demotion,
@@ -216,7 +216,7 @@ if __name__ == "__main__":
                 for i, index in enumerate(paired_new_obstacle_indices):
                     new_observation.pop(index - i)
 
-                # if there's anything remaining in new_observations not paired up with the actual map
+                # if there's anything remaining in new_observations not paired up with the employed map
                 if len(new_observation) != 0:
 
                     # find pairings for candidate map
@@ -242,7 +242,7 @@ if __name__ == "__main__":
                     for new_obstacle in new_observation:
 
                         # set unique obstacle_id
-                        new_obstacle.obstacle_id = max([actual_map.highest_id(), candidate_map.highest_id()]) + 1
+                        new_obstacle.obstacle_id = max([employed_map.highest_id(), candidate_map.highest_id()]) + 1
                         if verbose:
                             print(f"new ID is: {new_obstacle.obstacle_id}")
 
@@ -253,21 +253,21 @@ if __name__ == "__main__":
                     # empty new_observation array
                     new_observation = []
 
-                # include those obstacles from the candidate map, which have reached the threshold, to the actual map
+                # include those obstacles from the candidate map, which have reached the threshold, to the employed map
                 mo.promote_obstacles(candidate_map=candidate_map,
-                                     actual_map=actual_map,
+                                     employed_map=employed_map,
                                      promotion_merge_threshold=mapping_promotion_similarity_threshold,
                                      )
 
-                # set next state - publish obstacles, if new obstacle has been added to actual_map
-                #                  idle, if actual map hasn't changed
-                if actual_obstacles_before_update != len(actual_map.mapped_obstacles):
+                # set next state - publish obstacles, if new obstacle has been added to employed_map
+                #                  idle, if employed map hasn't changed
+                if employed_obstacles_before_update != len(employed_map.mapped_obstacles):
                     state = "publish_map"
                 else:
                     state = "idle"
 
                 if plot:
-                    actual_map.visualize_map(index=loop_count,
+                    employed_map.visualize_map(index=loop_count,
                                              out_dir=plots_dir,
                                              colors=colors,
                                              egovehicle=ego_vehicle,
@@ -285,7 +285,7 @@ if __name__ == "__main__":
             # publish map state: publish map through mqtt
             elif state == "publish_map":
                 # publish mapped objects
-                actual_map.publish_map(client=client, topic=topic_publish)
+                employed_map.publish_map(client=client, topic=topic_publish)
 
                 # restart timer for publish timeout
                 last_publish_time = datetime.datetime.now()
