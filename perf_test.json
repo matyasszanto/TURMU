@@ -1,0 +1,206 @@
+[
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296100676746,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194980239806,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    }
+]
