@@ -2,6 +2,7 @@ import datetime
 import time
 
 import numpy as np
+import pandas as pd
 
 import map_obstacle as mo
 import mqtt_turmu
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 
     # Map initialization and mapping threshold
     map_init_observations = 30
-    mapping_promotion_obs_threshold = 8
+    mapping_promotion_obs_threshold = 9     # TODO changed for performance test, was 8
     penalty_points_for_demotion = 20
     employed_map = mo.Map()
     candidate_map = mo.Map()
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     mapping_promotion_similarity_threshold = 0.92
 
     # map publication threshold
-    publish_timeout = 50     # seconds TODO this was changed from 5 for performance test
+    publish_timeout = 50     # seconds TODO changed for performance test, was 5
 
     # Ego-vehicle initialization
     ego_vehicle = None
@@ -75,6 +76,7 @@ if __name__ == "__main__":
 
     # performance test
     published_positions = []
+    employed_positions = []
 
     # debug
     verbose = True
@@ -216,6 +218,16 @@ if __name__ == "__main__":
                                    penalty_points_for_demotion=penalty_points_for_demotion,
                                    )
 
+                # for performance testing
+                if len(employed_map.mapped_obstacles) != 0:
+                    employed_positions.append([employed_map.mapped_obstacles[0].lat,
+                                               employed_map.mapped_obstacles[0].long]
+                                              )
+                    np.savetxt(F"performance_test/positions_employed_{mapping_promotion_obs_threshold}.csv",
+                               np.array(employed_positions),
+                               delimiter=";",
+                               )
+
                 # remove paired obstacles from the list of new observation
                 paired_new_obstacle_indices.sort()
                 for i, index in enumerate(paired_new_obstacle_indices):
@@ -290,11 +302,12 @@ if __name__ == "__main__":
 
             # publish map state: publish map through mqtt
             elif state == "publish_map":
-                print(f"Publish start time: {datetime.datetime.now().strftime('%S,%f')}")
-                published_positions.append([employed_map.mapped_obstacles[0].lat,
-                                            employed_map.mapped_obstacles[0].long]
-                                           )
-                np.savetxt("positions.csv", np.array(published_positions), delimiter=";")
+
+                # for performance test
+                publish_time = datetime.datetime.now().strftime('%S,%f')
+                pd.DataFrame([publish_time]).to_clipboard(index=False, sep=None, header=None)
+                print(f"Publish start time: {publish_time}. Copied to clipboard.")
+
                 # publish mapped objects
                 employed_map.publish_map(client=client, topic=topic_publish)
 
