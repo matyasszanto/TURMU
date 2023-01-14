@@ -7,6 +7,7 @@ import mqtt_turmu
 import visualize_obstacles
 
 import numpy as np
+import pandas as pd
 
 if __name__ == "__main__":
 
@@ -61,10 +62,9 @@ if __name__ == "__main__":
     max_step = 3000
     max_obstacles = 50
     top = True
+    first_pub = 0
 
-    i = 0
-    for publication in full_run_json[:max_step]:
-        i += 1
+    for i, publication in enumerate(full_run_json[:max_step]):
         if plot:
             max_obstacles = max_obstacles if max_obstacles < len(publication["obstacles"]
                                                                  ) else len(publication["obstacles"]
@@ -89,4 +89,12 @@ if __name__ == "__main__":
             publication["obstacles"] = publication["obstacles"][-max_obstacles:]
 
         client.publish(topic, json.dumps(publication))
-        print(f"Publication: {i}/{max_step}. Current time in seconds: {datetime.datetime.now().strftime('%S,%f')}")
+        print(f"Publication: {i+1}/{max_step}.")
+
+        # for performance test
+        if i == 0:
+            first_pub = datetime.datetime.now().strftime('%S,%f')
+            pd.DataFrame([first_pub]).to_clipboard(index=False, sep=None, header=None)
+            print(f"First publication time in seconds: {first_pub}. Copied to clipboard.")
+
+
