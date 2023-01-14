@@ -10,7 +10,7 @@ from matplotlib import cm
 
 if __name__ == "__main__":
 
-    # Setup variables
+    # Set up variables
     # parameters for Tecnalia MQTT broker
     broker, port, client_id, username, password, ca_certs_path, certfile_path, keyfile_path = \
         mqtt_turmu.load_default_params()
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     topic_publish = "iotac/planner"
 
     # for testing use "testtopic/egovehicle"
-    topic_egovehicle = "testtopic/egovehicle"
+    # topic_egovehicle = "testtopic/egovehicle"
 
     # connect the client
     client = mqtt_turmu.connect_mqtt(broker,
@@ -37,6 +37,7 @@ if __name__ == "__main__":
                                      keyfile_path,
                                      )
 
+    # wait for connection to finish
     time.sleep(0.1)
 
     # Init state selector
@@ -56,13 +57,13 @@ if __name__ == "__main__":
     employed_map = mo.Map()
     candidate_map = mo.Map()
 
-    # similarity thresholds - higher means more strict pairing rules
+    # similarity thresholds - higher value means more strict pairing rules
     employed_map_similarity_threshold = 0.999
     candidate_map_similarity_threshold = 0.9
     mapping_promotion_similarity_threshold = 0.92
 
     # map publication threshold
-    publish_timeout = 50     # seconds TODO this was changed from 5
+    publish_timeout = 50     # seconds TODO this was changed from 5 for performance test
 
     # Ego-vehicle initialization
     ego_vehicle = None
@@ -146,7 +147,7 @@ if __name__ == "__main__":
                 continue
 
             # idle state: listen to the MQTT topic, and obtain new broadcast observation (i.e., obstacles)
-            #             and sensor locations as well as separate timestamps to the ego_vehicle instant
+            #             and sensor locations as well as separate timestamps to the ego_vehicle instance
             elif state == "idle":
                 # listen to MQTT
                 while len(new_observation) == 0:
@@ -202,8 +203,9 @@ if __name__ == "__main__":
 
                 # update paired mapped obstacles
                 employed_map_observed.update_map(paired_mapped_obstacles_indices=paired_employed_mapped_obstacle_indices,
-                                               paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
-                                               newly_observed_obstacles=new_observation)
+                                                 paired_newly_observed_obstacle_indices=paired_new_obstacle_indices,
+                                                 newly_observed_obstacles=new_observation,
+                                                 )
 
                 # penalize not observed obstacles and demote them if necessary
                 mo.demote_obstacle(employed_map_observable_subset=employed_map_observed,
@@ -271,11 +273,11 @@ if __name__ == "__main__":
 
                 if plot:
                     employed_map.visualize_map(index=loop_count,
-                                             out_dir=plots_dir,
-                                             colors=colors,
-                                             egovehicle=ego_vehicle,
-                                             observable_radius=observable_area_radius,
-                                             )
+                                               out_dir=plots_dir,
+                                               colors=colors,
+                                               egovehicle=ego_vehicle,
+                                               observable_radius=observable_area_radius,
+                                               )
 
                     candidate_map.visualize_map(index=loop_count,
                                                 out_dir=plots_dir+"/cm",
@@ -285,6 +287,7 @@ if __name__ == "__main__":
                                                 )
 
                 continue
+
             # publish map state: publish map through mqtt
             elif state == "publish_map":
                 print(f"Publish start time: {datetime.datetime.now().strftime('%S,%f')}")
