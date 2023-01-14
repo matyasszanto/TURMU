@@ -29,7 +29,7 @@ if __name__ == "__main__":
                                      )
 
     # f = open("real_test.json")
-    f = open("perf_test.json")
+    f = open("performance_test/perf_test.json")
     full_run_json = json.load(f)
 
     plot = False
