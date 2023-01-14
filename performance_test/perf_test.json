@@ -3,9 +3,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.297280465233335,
+                "latitude": 43.297296000709885,
                 "length": 0.3000000000000042,
-                "longitude": -2.8712102490815563,
+                "longitude": -2.8711950377895326,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -21,9 +21,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29731012882126,
+                "latitude": 43.29729594325845,
                 "length": 0.3000000000000042,
-                "longitude": -2.871191213802169,
+                "longitude": -2.8711950277150957,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -39,9 +39,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29728751304384,
+                "latitude": 43.29729621319984,
                 "length": 0.3000000000000042,
-                "longitude": -2.8711766447051956,
+                "longitude": -2.871195052885021,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -57,9 +57,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29728563758677,
+                "latitude": 43.297296128830745,
                 "length": 0.3000000000000042,
-                "longitude": -2.871197125320317,
+                "longitude": -2.871194947003722,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -75,9 +75,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29730101402263,
+                "latitude": 43.297296065166805,
                 "length": 0.3000000000000042,
-                "longitude": -2.8711966476707693,
+                "longitude": -2.8711949182233445,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -93,9 +93,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.297301598428604,
+                "latitude": 43.297296056926776,
                 "length": 0.3000000000000042,
-                "longitude": -2.871194068513854,
+                "longitude": -2.8711948793922164,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -111,9 +111,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29728147179531,
+                "latitude": 43.297296029806304,
                 "length": 0.3000000000000042,
-                "longitude": -2.8711998857252743,
+                "longitude": -2.871194937976506,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -129,9 +129,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29729354055175,
+                "latitude": 43.29729610645796,
                 "length": 0.3000000000000042,
-                "longitude": -2.871161638589484,
+                "longitude": -2.8711949301640822,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -147,9 +147,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29730603759754,
+                "latitude": 43.297295982404634,
                 "length": 0.3000000000000042,
-                "longitude": -2.871189812282662,
+                "longitude": -2.8711948825059515,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -165,9 +165,9 @@
         "obstacles": [
             {
                 "ax": 0.0,
-                "latitude": 43.29731506674772,
+                "latitude": 43.29729619632499,
                 "length": 0.3000000000000042,
-                "longitude": -2.8711959081756318,
+                "longitude": -2.8711950440703715,
                 "obstacleId": 1,
                 "speed": 0.0,
                 "timestamp": "2022-08-24T15:17:26Z",
@@ -176,6 +176,116 @@
                 "yaw": 2.9539766530985645
             }
         ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297296087519754,
+                "length": 0.3000000000000042,
+                "longitude": -2.871194975634708,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.29729614709172,
+                "length": 0.3000000000000042,
+                "longitude": -2.871195043416818,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.29729606165485,
+                "length": 0.3000000000000042,
+                "longitude": -2.871195022239199,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.297295769140476,
+                "length": 0.3000000000000042,
+                "longitude": -2.871195083200961,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [
+            {
+                "ax": 0.0,
+                "latitude": 43.29729612333494,
+                "length": 0.3000000000000042,
+                "longitude": -2.8711951693929345,
+                "obstacleId": 1,
+                "speed": 0.0,
+                "timestamp": "2022-08-24T15:17:26Z",
+                "type": "empty",
+                "width": 0.6000000000000002,
+                "yaw": 2.9539766530985645
+            }
+        ],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [],
+        "sensor_latitude": 43.297254605462115,
+        "sensor_longitude": -2.871350835452154
+    },
+    {
+        "obstacles": [],
         "sensor_latitude": 43.297254605462115,
         "sensor_longitude": -2.871350835452154
     },
