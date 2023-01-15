@@ -29,8 +29,8 @@ if __name__ == "__main__":
                                      keyfile_path
                                      )
 
-    # f = open("real_test.json")
-    f = open("performance_test/perf_test.json")
+    f = open("real_test.json")
+    # f = open("performance_test/perf_test.json")
     full_run_json = json.load(f)
 
     plot = False
