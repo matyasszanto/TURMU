@@ -1,18 +1,20 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib.ticker import FormatStrFormatter
 
 arr = pd.read_csv("results_condensed.csv", delimiter=";").to_numpy()
 
 fig, ax = plt.subplots()
-ax.plot(arr[:, 0], arr[:, 1], "bo-")
-ax.set_xlabel("Promotion threshold")
-ax.set_ylabel("Total jitter (m)")
-# ax.yaxis.set_major_formatter(FormatStrFormatter('%.4f'))
+plt1 = ax.plot(arr[:, 0], arr[:, 1], "bo-", label="Jitter")
+ax.set_xlabel("Promotion threshold", fontsize=15)
+ax.set_ylabel("Total jitter (m)", fontsize=15)
 ax2 = ax.twinx()
-ax2.plot(arr[:, 0], arr[:, 2], "go-")
-ax2.set_ylabel("Average time delay (s)")
-# ax2.yaxis.set_major_formatter(FormatStrFormatter('%.4f'))
+plt2 = ax2.plot(arr[:, 0], arr[:, 2], "go-", label="Delay")
+ax2.set_ylabel("Average time delay (s)", fontsize=15)
+
+plts = plt1 + plt2
+labs = [plot.get_label() for plot in plts]
+ax.legend(plts, labs, loc="upper center")
+
+plt.tight_layout()
 # plt.show()
-plt.savefig("performance_test_results.png")
+plt.savefig("performance_test_results_new.png")
