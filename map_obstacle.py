@@ -394,9 +394,10 @@ class Map:
                                      obstacles=self.mapped_obstacles,
                                      )
 
-    def visualize_map(self, index, out_dir, colors=None, egovehicle=None, observable_radius=0):
+    def visualize_map(self, index, out_dir, colors=None, egovehicle=None, observable_radius=0, map_type=""):
         """
         method for visualizing mapped obstacles
+        :param map_type: title of plot
         :param index: loop index for output plot (.png) naming
         :param out_dir: directory to save output to
         :param colors: pre-defined colors array
@@ -423,18 +424,19 @@ class Map:
             long_min = np.min(longs)
             long_max = np.max(longs)
 
-            # run plotting function
-            vo.plot_obstacles(obstacles_list=self.mapped_obstacles,
-                              index=index,
-                              # long_extremes=[long_min, long_max],     # use this for live calculated values
-                              # lat_extremes=[lat_min, lat_max],        # use this for live calculated values
-                              long_extremes=[-2.87161, -2.87119],       # use this for real_test.json
-                              lat_extremes=[43.29708, 43.29746],        # use this for real_test.json
-                              path=out_dir,
-                              colors=colors,
-                              ego_pos=egovehicle.sensor_locations[-1],
-                              observable_radius=observable_radius,
-                              )
+        # run plotting function
+        vo.plot_obstacles(obstacles_list=self.mapped_obstacles,
+                          index=index,
+                          # long_extremes=[long_min, long_max],     # use this for live calculated values
+                          # lat_extremes=[lat_min, lat_max],        # use this for live calculated values
+                          long_extremes=[-2.87161, -2.87119],       # use this for real_test.json
+                          lat_extremes=[43.29708, 43.29746],        # use this for real_test.json
+                          path=out_dir,
+                          colors=colors,
+                          ego_pos=egovehicle.sensor_locations[-1],
+                          observable_radius=observable_radius,
+                          map_type=map_type,
+                          )
 
 
 def demote_obstacle(employed_map_observable_subset: Map,

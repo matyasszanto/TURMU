@@ -141,6 +141,7 @@ if __name__ == "__main__":
                                                out_dir=plots_dir,
                                                egovehicle=ego_vehicle,
                                                observable_radius=observable_area_radius,
+                                               map_type="Employed map",
                                                )
 
                 state = "idle"
@@ -181,6 +182,7 @@ if __name__ == "__main__":
                                                       colors=colors,
                                                       egovehicle=ego_vehicle,
                                                       observable_radius=observable_area_radius,
+                                                      map_type="New observation"
                                                       )
 
                 # for state selector choice
@@ -289,6 +291,7 @@ if __name__ == "__main__":
                                                colors=colors,
                                                egovehicle=ego_vehicle,
                                                observable_radius=observable_area_radius,
+                                               map_type="Employed map",
                                                )
 
                     candidate_map.visualize_map(index=loop_count,
@@ -296,6 +299,7 @@ if __name__ == "__main__":
                                                 colors=colors,
                                                 egovehicle=ego_vehicle,
                                                 observable_radius=observable_area_radius,
+                                                map_type="Candidate map",
                                                 )
 
                 continue
