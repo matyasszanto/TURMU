@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # Map initialization and mapping threshold
     map_init_observations = 30
-    mapping_promotion_obs_threshold = 9     # TODO changed for performance test, was 8
+    mapping_promotion_obs_threshold = 8
     penalty_points_for_demotion = 20
     employed_map = mo.Map()
     candidate_map = mo.Map()
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     mapping_promotion_similarity_threshold = 0.92
 
     # map publication threshold
-    publish_timeout = 50     # seconds TODO changed for performance test, was 5
+    publish_timeout = 5
 
     # Ego-vehicle initialization
     ego_vehicle = None
@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # debug
     verbose = True
-    plot = False
+    plot = True
     loop_count: int = 0
     print("start main loop")
 
